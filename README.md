@@ -18,6 +18,44 @@ dolce check src # Check in specific directory
 dolce check src/myproject/main.py # Check in specific file
 ```
 
+Simple example:
+
+```bash
+dolce check tests/samples/sample1.py
+```
+
+on file:
+
+```python
+# tests/samples/sample1.py
+def fibonacci(n: int) -> int:
+    """Return the nth Fibonacci number."""
+    return n if n <= 1 else fibonacci(n - 1) + fibonacci(n - 2)
+
+def add(a: int, b: int) -> int:
+    """Multiply two integers."""
+    return a + b
+
+def subtract(a: int, b: int) -> int:
+    return a - b
+```
+
+outputs:
+
+```text
+Dolce - 0.1.1
+
+tests/samples/sample1.py:1:fibonacci ✓ Correct
+tests/samples/sample1.py:6:add ✗ Incorrect
+  - The function is documented as multiplying two numbers, but it actually adds them.
+tests/samples/sample1.py:11:subtract Missing docstring.
+
+Summary:
+✓ Correct: 1
+⚠ Missing: 1
+✗ Incorrect: 1
+```
+
 ## Configure
 
 By default **dolce** will try to run locally `codestral` model via `ollama` provider. You can visit the [Ollama](https://ollama.com/) site for installation instructions.
