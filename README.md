@@ -20,7 +20,11 @@ dolce check src/myproject/main.py # Check in specific file
 
 ## Configure
 
-By default **dolce** will try to run locally `codestral` model via `ollama` provider. If you want to use a different LLM or provider you can configure the default options in the `pyproject.toml`:
+By default **dolce** will try to run locally `codestral` model via `ollama` provider. You can visit the [Ollama](https://ollama.com/) site for installation instructions.
+
+> :warning: Codestral is a 22b parameter model, you can experiment with smaller models but take into account that the results may vary.
+
+If you want to use a different model or provider you can configure the default options in the `pyproject.toml` of your project:
 
 ```toml
 [tool.dolce]
