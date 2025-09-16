@@ -28,7 +28,7 @@ outputs:
 
 ```text
 [ ERROR ] tests/samples/wrong_descr.py:1 add
-  ![#f03c15]- DOC300: Docstring states the function does something that the code does not do. (The docstring claims the function multiplies integers, but the code performs addition.)[/#f03c15]
+  - DOC300: Docstring states the function does something that the code does not do. (The docstring claims the function multiplies integers, but the code performs addition.)
 [ ERROR ] tests/samples/behavior.py:4 post_multiplication
   - DOC300: Docstring states the function does something that the code does not do. (The docstring summary 'Add two integers' does not match the code which performs multiplication and an HTTP POST request.)
   - DOC301: Docstring omits a critical behavior that the code performs. (The code performs a critical behavior (HTTP POST request) but the docstring does not mention this behavior.)

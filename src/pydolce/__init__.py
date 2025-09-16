@@ -2,7 +2,7 @@ import logging
 
 from pydolce.check import check
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
