@@ -4,7 +4,9 @@ import ast
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Generator
+from typing import Any, Generator
+
+from docstring_parser import Docstring, ParseError, parse
 
 
 @dataclass
@@ -16,6 +18,8 @@ class CodeSegment:
     lineno: int
     code: str
     doc: str
+    parsed_doc: Docstring | None
+    annotations: dict[str, str] | None = None
 
 
 class DocStatus(Enum):
@@ -44,12 +48,26 @@ def _parse_file(filepath: Path) -> Generator[CodeSegment]:
             lineno = getattr(node, "lineno", 1)
             func_name = node.name
             codepath = f"{filepath}:{lineno} {func_name}"
+            parsed_doc = None
+            try:
+                parsed_doc = parse(func_doc)
+            except ParseError:
+                pass
+
             yield CodeSegment(
                 file_path=filepath,
                 code=func_code,
                 doc=func_doc,
                 lineno=lineno,
                 code_path=f"{codepath}",
+                parsed_doc=parsed_doc,
+                annotations={
+                    a.arg: ast.unparse(a.annotation)
+                    for a in node.args.args
+                    if a.annotation is not None
+                }
+                if node.args
+                else None,
             )
 
 

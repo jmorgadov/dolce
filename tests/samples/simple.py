@@ -1,3 +1,7 @@
+def foo():
+    print("foo")
+
+
 def fibonacci(n: int) -> int:
     """Return the nth Fibonacci number."""
     return n if n <= 1 else fibonacci(n - 1) + fibonacci(n - 2)

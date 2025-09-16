@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Callable
 
-from pydolce.parser import CodeSegment, CodeSegmentReport, DocStatus
+from pydolce.parser import CodeSegment
 
 
 @dataclass
@@ -9,7 +9,7 @@ class DocRule:
     ref: str
     description: str
     prompt: str | None = None
-    check: Callable[[CodeSegment], bool] | None = None
+    check: Callable[[CodeSegment], list[str]] | None = None
 
     @property
     def level(self) -> int:
@@ -22,6 +22,43 @@ class DocRule:
     @property
     def sub_number(self) -> int:
         return int(self.ref[4:])
+
+
+def check_params_type(segment: CodeSegment) -> list[str]:
+    """
+    Check if the parameter types in the docstring match the function signature.
+    """
+
+    if segment.annotations is None or not segment.annotations:
+        return []
+
+    if segment.parsed_doc is None:
+        return []
+
+    errors = []
+    for param in segment.parsed_doc.params:
+        p_name = param.arg_name
+        p_type = param.type_name
+        if p_type is None:
+            # If the type is not documented, skip the check for this parameter
+            # There is another rule to check for missing types
+            continue
+
+        if p_name not in segment.annotations:
+            # Parameter documented but not in signature
+            # There is another rule to check for missing parameters
+            continue
+
+        sig_type = segment.annotations.get(p_name)
+        if sig_type is None:
+            sig_type = "None"
+
+        if str(sig_type).lower() != p_type.lower():
+            errors.append(
+                f"Parameter '{p_name}' has type '{sig_type}' in signature but '{p_type}' in docstring."
+            )
+
+    return errors
 
 
 ALL_RULES = [
@@ -39,6 +76,11 @@ ALL_RULES = [
         ref="DOC202",
         description="Docstring return description contains spelling errors.",
         prompt="The description of the RETURN VALUE contains TYPOS. Exmaples: 'functon' instead of 'function', 'retrun' instead of 'return'. Report the specific typos. Scopes: [RETURN_DESCRIPTION]",
+    ),
+    DocRule(
+        ref="DOC300",
+        description="Docstring parameter type is wrong.",
+        check=check_params_type,
     ),
     DocRule(
         ref="DOC300",
@@ -85,8 +127,8 @@ class RuleSet:
         issues = []
         for rule in self.rules:
             if rule.check is not None:
-                if not rule.check(segment):
-                    issues.append(f"{rule.ref}: {rule.description}")
+                for error in rule.check(segment):
+                    issues.append(f"{rule.ref}: {rule.description} ({error})")
         return issues
 
 

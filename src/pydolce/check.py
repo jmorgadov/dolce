@@ -53,6 +53,8 @@ Analysis scopes:
 - DESCRIPTION: The main description of the docstring.
 - PARAM_DESCRIPTION: The description of each parameter in the docstring.
 - RETURN_DESCRIPTION: The description of the return value in the docstring.
+- DOC_PARAM: The entire parameter section of the docstring.
+- PARAMS: The parameters in the function signature.
 - CODE: The actual code of the function.
 
 RULES TO CHECK:
@@ -77,55 +79,6 @@ VERY IMPORTANT: NEVER ADD ANY EXTRA COMENTARY OR DESCRIPTION. STICK TO THE EXACT
 
     user_prompt = f"""
 Check this code:
-```python
-{function_code.strip()}
-```
-"""
-    return system_prompt, user_prompt
-
-
-def simple_check_prompts(
-    function_code: str,
-) -> tuple[str, str]:
-    """
-    Create system and user prompts for the model to check docstring inconsistency.
-
-    This will NOT check parameters, returns values, or any other section but the
-    main description of the docstring.
-
-    This will NOT check for completeness, only for CRITICAL inconsistencies.
-
-    Args:
-        function_code: The Python function code to analyze
-        existing_docstring: Current docstring (if any)
-
-    Returns:
-        Tuple of (system_prompt, user_prompt)
-    """
-
-    system_prompt = """You are an expert Python code analyzer specializing in docstring validation. Your task is to analyze if a Python function docstring has critical inconsistencies with the actual code implementation.
-
-ANALYSIS FOCUS:
-- Check if the docstring match what the code actually does.
-- Completeness is NOT a goal. ONLY check for CRITICAL INCONSISTENCIES.
-
-ONLY analyze the function description. DO NOT analyze the parameters or return value.
-If there is something in the code that is NOT mentioned in the docstring, it is NOT an issue.
-JUST focus on what is documented, and if it matches the code.
-
-EXACT OUTPUT FORMAT IN JSON:
-
-```
-{
-"status": "[CORRECT/INCORRECT]",
-"issues": [List of specific issues foundm, enumerated, one sentence max per issue. Empty list if no issues.]
-}
-```
-
-VERY IMPORTANT: DO NOT ADD ANY EXTRA COMENTARY OR DESCRIPTION. STICK TO THE EXACT OUTPUT FORMAT.
-"""
-
-    user_prompt = f"""
 ```python
 {function_code.strip()}
 ```
@@ -273,10 +226,9 @@ def check(path: str, config: DolceConfig) -> None:
         if pair.file_path != last_path:
             sig_errors = check_signature(pair.file_path, config.docsig_config or {})
             last_path = pair.file_path
-        # if config.ignore_missing and (not pair.doc or pair.doc.strip() == ""):
-        #     continue
 
         loc = f"[blue]{pair.code_path}[/blue]"
+        rich.print(f"[  ...  ] [blue]{loc}[/blue]", end="\r")
 
         quick_issues = config.rule_set.check(pair)
         if quick_issues:
@@ -306,7 +258,7 @@ def check(path: str, config: DolceConfig) -> None:
             reports.append(report)
             continue
 
-        if llm is not None:
+        if llm is not None and pair.doc.strip():
             desc_report = check_description(pair, llm, config.rule_set.llm_rules())
             if desc_report is None:
                 continue
