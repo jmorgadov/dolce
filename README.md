@@ -79,7 +79,9 @@ dolce rules
 - **DOC206:** Parameter type missing
 - **DOC206:** Invalid parameter type
 - **DOC204:** Invalid return type
+
 LLM based rules:
+
 - **DOC301:** Docstring description contains spelling errors.
 - **DOC302:** Docstring parameter description contains spelling errors.
 - **DOC303:** Docstring return description contains spelling errors.
