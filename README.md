@@ -28,21 +28,22 @@ outputs:
 
 ```text
 [ ERROR ] tests/samples/wrong_descr.py:1 add
-  - DOC300: Docstring states the function does something that the code does not do. (The docstring claims the function multiplies integers, but the code performs addition.)
+  - DOC401: Docstring states the function does something that the code does not do. (The docstring summary 'Multiply two integers' does not match the code's behavior of adding integers.)
 [ ERROR ] tests/samples/behavior.py:4 post_multiplication
-  - DOC300: Docstring states the function does something that the code does not do. (The docstring summary 'Add two integers' does not match the code which performs multiplication and an HTTP POST request.)
-  - DOC301: Docstring omits a critical behavior that the code performs. (The code performs a critical behavior (HTTP POST request) but the docstring does not mention this behavior.)
+  - DOC401: Docstring states the function does something that the code does not do. (The docstring summary says 'Add two integers' but the code performs multiplication.)
+  - DOC402: Docstring omits a critical behavior that the code performs. (The code makes an HTTP POST request (critical behavior) but the docstring does not mention this.)
 [ ERROR ] tests/samples/typos.py:1 add
-  - DOC200: Docstring description contains spelling errors. (The docstring DESCRIPTION contains typo: 'intgers' instead of 'integers'.)
-  - DOC201: Docstring parameter description contains spelling errors. (The parameter 'a' description contains typo: 'Te' instead of 'The'.)
-[ ERROR ] tests/samples/simple.py:1 fibonacci
-  - SIG203: parameters missing
-  - SIG503: return missing from docstring
-[  OK   ] tests/samples/simple.py:6 subtract
+  - DOC301: Docstring description contains spelling errors. (Typo in DESCRIPTION: 'intgers' instead of 'integers')
+  - DOC302: Docstring parameter description contains spelling errors. (Typo in PARAM_DESCRIPTION: 'Te' instead of 'The')
+[ ERROR ] tests/samples/simple.py:1 foo
+  - DOC101: Function is missing a docstring.
+[ ERROR ] tests/samples/simple.py:5 fibonacci
+  - DOC203: Missing parameter in documention (Parameter 'n' in signature but not documented.)
+[  OK   ] tests/samples/simple.py:17 subtract
 
 Summary:
 ✓ Correct: 1
-✗ Incorrect: 4
+✗ Incorrect: 5
 ```
 
 ## Configure
@@ -53,17 +54,41 @@ Right now **dolce** can be configured via `pyproject.toml` file. You can specify
 [tool.dolce]
 target = [
   # Set of rules to check
-  "DOC300",
+  "DOC101",
 ]
 disable = [
   # Set of rules to ignore
-  "SIG201",
+  "DOC101",
 ]
 ```
 
-### Rules checked with LLM
+### Quick reference of available rules
 
-Some rules require an LLM to check docstrings (e.g., docstring spelling, docstring description vs code behavior, etc.). By default **dolce** will try to run locally `qwen3:8b` model via `ollama` provider. You can visit the [Ollama](https://ollama.com/) site for installation instructions.
+```bash
+dolce rules
+```
+
+- **DOC101:** Function is missing a docstring.
+- **DOC102:** Class is missing a docstring.
+- **DOC103:** Class docstring has invalid syntax.
+- **DOC201:** Duplicate parameters in docstring.
+- **DOC202:** Documented parameter does not exist
+- **DOC203:** Missing parameter in documention
+- **DOC204:** Parameter description is missing
+- **DOC205:** Return missing from docstring
+- **DOC206:** Parameter type missing
+- **DOC206:** Invalid parameter type
+- **DOC204:** Invalid return type
+LLM based rules:
+- **DOC301:** Docstring description contains spelling errors.
+- **DOC302:** Docstring parameter description contains spelling errors.
+- **DOC303:** Docstring return description contains spelling errors.
+- **DOC401:** Docstring states the function does something that the code does not do.
+- **DOC402:** Docstring omits a critical behavior that the code performs.
+
+### Use of LLM
+
+By default **dolce** will try to run locally `qwen3:8b` model via `ollama` provider. You can visit the [Ollama](https://ollama.com/) site for installation instructions.
 
 `qwen3:8b` has relatively good performance while fitting in an RTX 4060 GPU (8GB VRAM). However, if you want to use a different model or provider you can configure the default options in the `pyproject.toml` of your project like this:
 
@@ -73,29 +98,6 @@ url = "http://localhost:11434"
 model = "codestral"
 provider = "ollama"
 api_key = "YOUR_API_KEY_ENVIROMENT_VAR"
-```
-
-### Signature check
-
-Signature check is done vía [docsig](https://docsig.readthedocs.io/en/latest/index.html). If you add a `[tool.docsig]` config section in your `pyproject.toml` file, **dolce** will load it to configure the signature check.
-
-```toml
-# Example from docsign documentation 
-# https://docsig.readthedocs.io/en/latest/usage/configuration.html
-[tool.docsig]
-check-dunders = false
-check-overridden = false
-check-protected = false
-disable = [
-    "SIG101",
-    "SIG102",
-    "SIG402",
-]
-target = [
-    "SIG202",
-    "SIG203",
-    "SIG201",
-]
 ```
 
 ## To be implemented

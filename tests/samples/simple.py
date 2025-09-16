@@ -1,9 +1,16 @@
-def foo():
+def foo() -> None:
     print("foo")
 
 
 def fibonacci(n: int) -> int:
-    """Return the nth Fibonacci number."""
+    """Return the nth Fibonacci number.
+
+    Args
+    n : int
+        The position in the Fibonacci sequence.
+    Returns:
+        int: The nth Fibonacci number.
+    """
     return n if n <= 1 else fibonacci(n - 1) + fibonacci(n - 2)
 
 

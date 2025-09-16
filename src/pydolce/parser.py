@@ -2,11 +2,16 @@ from __future__ import annotations
 
 import ast
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, auto
 from pathlib import Path
-from typing import Any, Generator
+from typing import Generator
 
 from docstring_parser import Docstring, ParseError, parse
+
+
+class CodeSegmentType(Enum):
+    Function = auto()
+    Class = auto()
 
 
 @dataclass
@@ -19,7 +24,9 @@ class CodeSegment:
     code: str
     doc: str
     parsed_doc: Docstring | None
-    annotations: dict[str, str] | None = None
+    args: dict[str, str] | None = None
+    returns: str | None = None
+    seg_type: CodeSegmentType = CodeSegmentType.Function
 
 
 class DocStatus(Enum):
@@ -61,13 +68,15 @@ def _parse_file(filepath: Path) -> Generator[CodeSegment]:
                 lineno=lineno,
                 code_path=f"{codepath}",
                 parsed_doc=parsed_doc,
-                annotations={
+                args={
                     a.arg: ast.unparse(a.annotation)
                     for a in node.args.args
                     if a.annotation is not None
                 }
                 if node.args
                 else None,
+                returns=ast.unparse(node.returns) if node.returns else None,
+                seg_type=CodeSegmentType.Function,
             )
 
 

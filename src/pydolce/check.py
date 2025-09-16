@@ -2,14 +2,10 @@ from __future__ import annotations
 
 import json
 import re
-from collections import defaultdict
 from pathlib import Path
 from typing import Counter
 
 import rich
-from docsig._core import _Messages, runner
-from docsig._report import Failed
-from docsig.messages import E
 
 from pydolce.client import LLMClient, LLMConfig
 from pydolce.config import DolceConfig
@@ -19,7 +15,7 @@ from pydolce.parser import (
     DocStatus,
     code_docs_from_path,
 )
-from pydolce.rules import RULES_FROM_REF, DocRule
+from pydolce.rules.rules import RULES_FROM_REF, DocRule
 
 
 def ruled_check_prompts(
@@ -128,34 +124,6 @@ def _print_summary(responses: list[CodeSegmentReport]) -> None:
         rich.print(f"[red]✗ Incorrect: {statuses_count[DocStatus.INCORRECT]}[/red]")
 
 
-def check_signature(path: Path, docsig_config: dict) -> dict[int, list[Failed]]:
-    target = (
-        _Messages()
-        if docsig_config.get("target") is None
-        else [E.from_ref(ref=r) for r in docsig_config["target"]]
-    )
-    disable = (
-        _Messages()
-        if docsig_config.get("disable") is None
-        else [E.from_ref(ref=r) for r in docsig_config["disable"]]
-    )
-
-    _docsig_config = docsig_config.copy()
-    _docsig_config["target"] = target
-    _docsig_config["disable"] = disable
-
-    failures = runner(
-        path,
-        **_docsig_config,
-    )
-    sig_errors = defaultdict(list)
-    for failure in failures:
-        for error in failure:
-            sig_errors[error.lineno].append(error)
-
-    return sig_errors
-
-
 def check_description(
     codeseg: CodeSegment, llm: LLMClient, rules: list[DocRule]
 ) -> CodeSegmentReport | None:
@@ -189,7 +157,10 @@ def check_description(
                 continue
 
             ref = ref_search[0]
-            rule_descr = RULES_FROM_REF.get(ref).description
+            if ref not in RULES_FROM_REF:
+                # Unknown rule reference
+                continue
+            rule_descr = RULES_FROM_REF[ref].description
             issue_descr = (
                 json_resp["descr"][i]
                 if "descr" in json_resp and len(json_resp["descr"]) > i
@@ -220,13 +191,7 @@ def check(path: str, config: DolceConfig) -> None:
 
     reports: list[CodeSegmentReport] = []
 
-    last_path = None
-    sig_errors: dict[int, list[Failed]] = {}
     for pair in code_docs_from_path(checkpath):
-        if pair.file_path != last_path:
-            sig_errors = check_signature(pair.file_path, config.docsig_config or {})
-            last_path = pair.file_path
-
         loc = f"[blue]{pair.code_path}[/blue]"
         rich.print(f"[  ...  ] [blue]{loc}[/blue]", end="\r")
 
@@ -236,22 +201,6 @@ def check(path: str, config: DolceConfig) -> None:
             report = CodeSegmentReport(
                 status=DocStatus.INCORRECT,
                 issues=quick_issues,
-            )
-            for issue in report.issues:
-                rich.print(f"[red]  - {issue}[/red]")
-            reports.append(report)
-            continue
-
-        segment_length = len(pair.code.splitlines())
-        curr_errors: list[Failed] = []
-        for lineno, error in sig_errors.items():
-            if pair.lineno <= lineno < pair.lineno + segment_length:
-                curr_errors.extend(error)
-        if curr_errors:
-            rich.print(f"[red][ ERROR ][/red] {loc}")
-            report = CodeSegmentReport(
-                status=DocStatus.INCORRECT,
-                issues=[f"{issue.ref}: {issue.description}" for issue in curr_errors],
             )
             for issue in report.issues:
                 rich.print(f"[red]  - {issue}[/red]")

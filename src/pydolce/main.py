@@ -41,6 +41,12 @@ def check(
     )
 
 
+@app.command()
+def rules() -> None:
+    for rule in pydolce.rules.rules.ALL_RULES:
+        rich.print(f"- [cyan]{rule.ref}[/cyan]: {rule.description}")
+
+
 @app.callback()
 def main_callback() -> None:
     version = pydolce.__version__

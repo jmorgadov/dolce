@@ -7,14 +7,7 @@ requires-python = ">= 3.10"
 authors = [{ name = "Jorge Morgado Vega", email = "jorge.morgadov@gmail.com" }]
 license = { text = "MIT" }
 
-dependencies = [
-    "rich",
-    "requests",
-    "typer",
-    "toml",
-    "docsig",
-    "docstring-parser",
-]
+dependencies = ["rich", "requests", "typer", "toml", "docstring-parser"]
 
 [dependency-groups]
 dev = [
