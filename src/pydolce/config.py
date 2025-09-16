@@ -12,7 +12,18 @@ import toml
 class DolceConfig:
     """Configuration for Dolce"""
 
+    # General options
     ignore_missing: bool = False
+    exclude: list[str] | None = None
+
+    # Check options
+    check_signature: bool = True
+    check_description: bool = True
+
+    # Signature options
+    docsig_config: dict[str, Any] | None = None
+
+    # LLM options
     provider: str = "ollama"
     url: str = "http://localhost:11434"
     model: str = "codestral"
@@ -44,12 +55,18 @@ class DolceConfig:
             return DolceConfig()
 
         pyproject = toml.load(pyproject_path)
-        config = pyproject.get("tool", {}).get("dolce", {})
+        tool = pyproject.get("tool", {})
+        config = tool.get("dolce", {})
 
         api_key_env_var = config.get("api_key", None)
         config["api_key"] = (
             None if api_key_env_var is None else os.environ.get(api_key_env_var, None)
         )
+
+        docsig = tool.get("docsig", {})
+        docsig["no_ansi"] = True
+        _docsig_config = {k.replace("-", "_"): v for k, v in docsig.items()}
+        config["docsig_config"] = _docsig_config
 
         return DolceConfig(**config)
 

@@ -24,41 +24,39 @@ Simple example:
 dolce check tests/samples/sample1.py
 ```
 
-on file:
-
-```python
-# tests/samples/sample1.py
-def fibonacci(n: int) -> int:
-    """Return the nth Fibonacci number."""
-    return n if n <= 1 else fibonacci(n - 1) + fibonacci(n - 2)
-
-def add(a: int, b: int) -> int:
-    """Multiply two integers."""
-    return a + b
-
-def subtract(a: int, b: int) -> int:
-    return a - b
-```
-
 outputs:
 
 ```text
-Dolce - 0.1.1
-
-tests/samples/sample1.py:1:fibonacci ✓ Correct
-tests/samples/sample1.py:6:add ✗ Incorrect
-  - The function is documented as multiplying two numbers, but it actually adds them.
-tests/samples/sample1.py:11:subtract Missing docstring.
+[ ERROR ] tests/samples/sample1.py:1 fibonacci
+  Incorrect signature
+    - SIG203: parameters missing
+    - SIG503: return missing from docstring
+[ ERROR ] tests/samples/sample1.py:6 add
+  Incorrect description
+    - The docstring states that the function multiplies two numbers, but the code adds them.
+[ WARN  ] tests/samples/sample1.py:20 subtract
+  Missing docstring
+[  OK   ] tests/samples/sample1.py:24 multiply
 
 Summary:
 ✓ Correct: 1
 ⚠ Missing: 1
-✗ Incorrect: 1
+✗ Incorrect: 2
 ```
 
 ## Configure
 
-By default **dolce** will try to run locally `codestral` model via `ollama` provider. You can visit the [Ollama](https://ollama.com/) site for installation instructions.
+Right now **dolce** can be configured via `pyproject.toml` file and it supports checking docstring descriptions and signatures. You can enable/disable each check independently:
+
+```toml
+[tool.dolce]
+check_description = true  # Enable/disable description check (default: true)
+check_signature = true    # Enable/disable signature check (default: true)
+```
+
+### Description check
+
+To check docstrings descriptions **dolce** uses an LLM. By default it will try to run locally `codestral` model via `ollama` provider. You can visit the [Ollama](https://ollama.com/) site for installation instructions.
 
 > :warning: Codestral is a 22b parameter model, you can experiment with smaller models but take into account that the results may vary.
 
@@ -72,10 +70,33 @@ provider = "ollama"
 api_key = "YOUR_API_KEY_ENVIROMENT_VAR"
 ```
 
+## Signature check
+
+Signature check is done vía [docsig](https://docsig.readthedocs.io/en/latest/index.html). If you add a `[tool.docsig]` config section in your `pyproject.toml` file, **dolce** will load it to configure the signature check.
+
+```toml
+# Example from docsign documentation 
+# https://docsig.readthedocs.io/en/latest/usage/configuration.html
+[tool.docsig]
+check-dunders = false
+check-overridden = false
+check-protected = false
+disable = [
+    "SIG101",
+    "SIG102",
+    "SIG402",
+]
+target = [
+    "SIG202",
+    "SIG203",
+    "SIG201",
+]
+```
+
+
 ## To be implemented
 
 - Add cache system to avoid re-checking unchanged code
-- Integrate third-party tools to check docstrings style, parameters, etc.
 - Support for ignoring specific code segments, files, directories, etc
 - Support parallel requests
 ... much more!

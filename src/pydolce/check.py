@@ -1,13 +1,20 @@
+from __future__ import annotations
+
 import json
+from collections import defaultdict
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import Counter
 
 import rich
+from docsig._core import _Messages, runner
+from docsig._report import Failed
+from docsig.messages import E
 
 from pydolce.client import LLMClient, LLMConfig
 from pydolce.config import DolceConfig
-from pydolce.parser import code_docs_from_path
+from pydolce.parser import CodeSegment, code_docs_from_path
 
 
 class DocStatus(Enum):
@@ -16,9 +23,18 @@ class DocStatus(Enum):
     MISSING = "MISSING"
 
 
+@dataclass
+class CodeSegmentReport:
+    status: DocStatus
+    issues: list[str]
+
+    @staticmethod
+    def correct() -> CodeSegmentReport:
+        return CodeSegmentReport(status=DocStatus.CORRECT, issues=[])
+
+
 def simple_check_prompts(
     function_code: str,
-    existing_docstring: str,
 ) -> tuple[str, str]:
     """
     Create system and user prompts for the model to check docstring inconsistency.
@@ -62,11 +78,6 @@ VERY IMPORTANT: DO NOT ADD ANY EXTRA COMENTARY OR DESCRIPTION. STICK TO THE EXAC
 ```python
 {function_code.strip()}
 ```
-
-Current docstring:
-```
-{existing_docstring.strip()}
-```
 """
     return system_prompt, user_prompt
 
@@ -104,69 +115,141 @@ def _extract_json_object(text: str) -> str | None:
     return None
 
 
-def _print_summary(responses: list[dict]) -> None:
-    statuses_count = Counter(resp["status"] for resp in responses)
+def _print_summary(responses: list[CodeSegmentReport]) -> None:
+    statuses_count = Counter(resp.status for resp in responses)
     rich.print("\n[bold]Summary:[/bold]")
-    if "CORRECT" in statuses_count:
-        rich.print(f"[green]✓ Correct: {statuses_count['CORRECT']}[/green]")
-    if "MISSING" in statuses_count:
-        rich.print(f"[yellow]⚠ Missing: {statuses_count['MISSING']}[/yellow]")
-    if "INCORRECT" in statuses_count:
-        rich.print(f"[red]✗ Incorrect: {statuses_count['INCORRECT']}[/red]")
+    if DocStatus.CORRECT in statuses_count:
+        rich.print(f"[green]✓ Correct: {statuses_count[DocStatus.CORRECT]}[/green]")
+    if DocStatus.MISSING in statuses_count:
+        rich.print(f"[yellow]⚠ Missing: {statuses_count[DocStatus.MISSING]}[/yellow]")
+    if DocStatus.INCORRECT in statuses_count:
+        rich.print(f"[red]✗ Incorrect: {statuses_count[DocStatus.INCORRECT]}[/red]")
+
+
+def check_signature(path: Path, docsig_config: dict) -> dict[int, list[Failed]]:
+    target = (
+        _Messages()
+        if docsig_config.get("target") is None
+        else [E.from_ref(ref=r) for r in docsig_config["target"]]
+    )
+    disable = (
+        _Messages()
+        if docsig_config.get("disable") is None
+        else [E.from_ref(ref=r) for r in docsig_config["disable"]]
+    )
+
+    _docsig_config = docsig_config.copy()
+    _docsig_config["target"] = target
+    _docsig_config["disable"] = disable
+
+    failures = runner(
+        path,
+        **_docsig_config,
+    )
+    sig_errors = defaultdict(list)
+    for failure in failures:
+        for error in failure:
+            sig_errors[error.lineno].append(error)
+
+    return sig_errors
+
+
+def check_description(codeseg: CodeSegment, llm: LLMClient) -> CodeSegmentReport | None:
+    sys_prompt, user_prompt = simple_check_prompts(
+        function_code=codeseg.code,
+    )
+    response = llm.generate(
+        prompt=user_prompt,
+        system=sys_prompt,
+    )
+
+    json_resp_str = _extract_json_object(response)
+
+    if json_resp_str is None:
+        rich.print(
+            "  [yellow]⚠ Invalid response from model. Ignoring function[/yellow]"
+        )
+        return None
+
+    json_resp = json.loads(json_resp_str)
+
+    if json_resp["status"] == DocStatus.CORRECT.value:
+        return CodeSegmentReport.correct()
+
+    return CodeSegmentReport(
+        status=DocStatus.INCORRECT,
+        issues=json_resp["issues"],
+    )
 
 
 def check(path: str, config: DolceConfig) -> None:
     checkpath = Path(path)
 
-    llm = LLMClient(LLMConfig.from_dolce_config(config))
-    if not llm.test_connection():
-        rich.print("[red]✗ Connection failed[/red]")
-        return
+    llm = None
+    if config.check_description:
+        llm = LLMClient(LLMConfig.from_dolce_config(config))
+        if not llm.test_connection():
+            rich.print("[red]✗ Connection failed[/red]")
+            return
 
-    responses = []
+    reports: list[CodeSegmentReport] = []
 
+    last_path = None
+    sig_errors: dict[int, list[Failed]] = {}
     for pair in code_docs_from_path(checkpath):
+        if config.check_signature and pair.file_path != last_path:
+            sig_errors = check_signature(pair.file_path, config.docsig_config or {})
+            last_path = pair.file_path
         if config.ignore_missing and (not pair.doc or pair.doc.strip() == ""):
             continue
 
-        rich.print(f"[blue]{pair.code_path}[/blue]", end=" ")
+        loc = f"[blue]{pair.code_path}[/blue]"
 
         if not pair.doc or pair.doc.strip() == "":
-            rich.print("[yellow]Missing docstring.[/yellow]")
-            responses.append(
-                {
-                    "status": DocStatus.MISSING.value,
-                    "issues": [],
-                }
+            rich.print(f"[yellow][ WARN  ][/yellow] {loc}")
+            rich.print("  Missing docstring")
+            reports.append(
+                CodeSegmentReport(
+                    status=DocStatus.MISSING,
+                    issues=[],
+                )
             )
             continue
 
-        sys_prompt, user_prompt = simple_check_prompts(
-            function_code=pair.code,
-            existing_docstring=pair.doc,
-        )
-        response = llm.generate(
-            prompt=user_prompt,
-            system=sys_prompt,
-        )
+        if config.check_signature:
+            segment_length = len(pair.code.splitlines())
+            curr_errors: list[Failed] = []
+            for lineno, error in sig_errors.items():
+                if pair.lineno <= lineno < pair.lineno + segment_length:
+                    curr_errors.extend(error)
+            if curr_errors:
+                rich.print(f"[red][ ERROR ][/red] {loc}")
+                rich.print("  Incorrect signature")
+                report = CodeSegmentReport(
+                    status=DocStatus.INCORRECT,
+                    issues=[
+                        f"{issue.ref}: {issue.description}" for issue in curr_errors
+                    ],
+                )
+                for issue in report.issues:
+                    rich.print(f"    - {issue}")
+                reports.append(report)
+                continue
 
-        json_resp_str = _extract_json_object(response)
+        if config.check_description and llm is not None:
+            desc_report = check_description(pair, llm)
+            if desc_report is None:
+                continue
 
-        if json_resp_str is None:
-            rich.print(
-                "[yellow]⚠ Invalid response from model. Ignoring function[/yellow]"
-            )
-            continue
+            if desc_report.status != DocStatus.CORRECT:
+                reports.append(report)
+                rich.print(f"[red][ ERROR ][/red] {loc}")
+                rich.print("  Incorrect description")
+                for issue in desc_report.issues:
+                    rich.print(f"    - {issue}")
+                continue
 
-        json_resp = json.loads(json_resp_str)
+        reports.append(CodeSegmentReport.correct())
+        rich.print(f"[green][  OK   ][/green] {loc}")
 
-        if json_resp["status"] == DocStatus.CORRECT.value:
-            rich.print("[green]✓ Correct[/green]")
-        else:
-            rich.print("[red]✗ Incorrect[/red]")
-            for issue in json_resp["issues"]:
-                rich.print(f"  - {issue}")
-
-        responses.append(json_resp)
-
-    _print_summary(responses)
+    _print_summary(reports)

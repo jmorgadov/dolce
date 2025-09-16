@@ -4,9 +4,32 @@ def fibonacci(n: int) -> int:
 
 
 def add(a: int, b: int) -> int:
-    """Multiply two integers."""
+    """
+    Multiply two integers.
+
+    Args:
+        a (int): The first integer.
+        b (int): The second integer.
+
+    Returns:
+        int: The sum of the two integers.
+    """
     return a + b
 
 
 def subtract(a: int, b: int) -> int:
     return a - b
+
+
+def multiply(a: int, b: int) -> int:
+    """
+    Multiply two integers.
+
+    Args:
+        a (int): The first integer.
+        b (int): The second integer.
+
+    Returns:
+        int: The product of the two integers.
+    """
+    return a * b
