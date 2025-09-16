@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import ast
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 from typing import Generator
 
@@ -13,6 +16,21 @@ class CodeSegment:
     lineno: int
     code: str
     doc: str
+
+
+class DocStatus(Enum):
+    CORRECT = "CORRECT"
+    INCORRECT = "INCORRECT"
+
+
+@dataclass
+class CodeSegmentReport:
+    status: DocStatus
+    issues: list[str]
+
+    @staticmethod
+    def correct() -> CodeSegmentReport:
+        return CodeSegmentReport(status=DocStatus.CORRECT, issues=[])
 
 
 def _parse_file(filepath: Path) -> Generator[CodeSegment]:

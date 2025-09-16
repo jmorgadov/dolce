@@ -7,18 +7,32 @@ from typing import Any
 
 import toml
 
+from pydolce.rules import DEFAULT_RULESET, RuleSet
+
+DEFAULT_EXCLUDES = [
+    "__init__.py",
+    "setup.py",
+    "conftest.py",
+    "tests/*",
+    "test_*.py",
+    "*_test.py",
+    "*/tests/*",
+    ".venv",
+    ".git",
+    "dist",
+]
+
 
 @dataclass
 class DolceConfig:
     """Configuration for Dolce"""
 
     # General options
-    ignore_missing: bool = False
-    exclude: list[str] | None = None
+    target: list[str] | None = None  # Specific rules to target
+    disable: list[str] | None = None  # Specific rules to disable
+    rule_set: RuleSet = DEFAULT_RULESET
 
-    # Check options
-    check_signature: bool = True
-    check_description: bool = True
+    exclude: list[str] | None = None
 
     # Signature options
     docsig_config: dict[str, Any] | None = None
@@ -26,10 +40,10 @@ class DolceConfig:
     # LLM options
     provider: str = "ollama"
     url: str = "http://localhost:11434"
-    model: str = "codestral"
+    model: str = "qwen3:8b"
     api_key: str | None = None
-    temperature: float = 0.1
-    max_tokens: int | None = None
+    temperature: float = 0.0
+    max_tokens: int | None = 2000
     timeout: int = 120
     max_retries: int = 3
     retry_delay: float = 1.0
@@ -44,7 +58,6 @@ class DolceConfig:
             desc += "API Key: [REDACTED]\n"
         else:
             desc += "API Key: Not Set\n"
-        desc += f"Ignore Missing: {self.ignore_missing}\n"
         return desc
 
     @staticmethod
@@ -57,6 +70,16 @@ class DolceConfig:
         pyproject = toml.load(pyproject_path)
         tool = pyproject.get("tool", {})
         config = tool.get("dolce", {})
+
+        if "target" in config or "disable" in config:
+            config["rule_set"] = RuleSet(
+                target=config.get("target", None), disable=config.get("disable", None)
+            )
+        else:
+            config["rule_set"] = DEFAULT_RULESET
+
+        if "exclude" not in config:
+            config["exclude"] = DEFAULT_EXCLUDES
 
         api_key_env_var = config.get("api_key", None)
         config["api_key"] = (

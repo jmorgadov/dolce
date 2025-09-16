@@ -18,49 +18,54 @@ dolce check src # Check in specific directory
 dolce check src/myproject/main.py # Check in specific file
 ```
 
-Simple example:
+### Example
 
 ```bash
-dolce check tests/samples/sample1.py
+dolce check tests/samples
 ```
 
 outputs:
 
 ```text
-[ ERROR ] tests/samples/sample1.py:1 fibonacci
-  Incorrect signature
-    - SIG203: parameters missing
-    - SIG503: return missing from docstring
-[ ERROR ] tests/samples/sample1.py:6 add
-  Incorrect description
-    - The docstring states that the function multiplies two numbers, but the code adds them.
-[ WARN  ] tests/samples/sample1.py:20 subtract
-  Missing docstring
-[  OK   ] tests/samples/sample1.py:24 multiply
+[ ERROR ] tests/samples/wrong_descr.py:1 add
+  - DOC300: Docstring states the function does something that the code does not do. (The docstring claims the function multiplies integers, but the code performs addition.)
+[ ERROR ] tests/samples/behavior.py:4 post_multiplication
+  - DOC300: Docstring states the function does something that the code does not do. (The docstring summary 'Add two integers' does not match the code which performs multiplication and an HTTP POST request.)
+  - DOC301: Docstring omits a critical behavior that the code performs. (The code performs a critical behavior (HTTP POST request) but the docstring does not mention this behavior.)
+[ ERROR ] tests/samples/typos.py:1 add
+  - DOC200: Docstring description contains spelling errors. (The docstring DESCRIPTION contains typo: 'intgers' instead of 'integers'.)
+  - DOC201: Docstring parameter description contains spelling errors. (The parameter 'a' description contains typo: 'Te' instead of 'The'.)
+[ ERROR ] tests/samples/simple.py:1 fibonacci
+  - SIG203: parameters missing
+  - SIG503: return missing from docstring
+[  OK   ] tests/samples/simple.py:6 subtract
 
 Summary:
 ✓ Correct: 1
-⚠ Missing: 1
-✗ Incorrect: 2
+✗ Incorrect: 4
 ```
 
 ## Configure
 
-Right now **dolce** can be configured via `pyproject.toml` file and it supports checking docstring descriptions and signatures. You can enable/disable each check independently:
+Right now **dolce** can be configured via `pyproject.toml` file. You can specify which rules to check and which to ignore. By default it will check all rules.
 
 ```toml
 [tool.dolce]
-check_description = true  # Enable/disable description check (default: true)
-check_signature = true    # Enable/disable signature check (default: true)
+target = [
+  # Set of rules to check
+  "DOC300",
+]
+disable = [
+  # Set of rules to ignore
+  "SIG201",
+]
 ```
 
-### Description check
+### Rules checked with LLM
 
-To check docstrings descriptions **dolce** uses an LLM. By default it will try to run locally `codestral` model via `ollama` provider. You can visit the [Ollama](https://ollama.com/) site for installation instructions.
+Some rules require an LLM to check docstrings (e.g., docstring spelling, docstring description vs code behavior, etc.). By default **dolce** will try to run locally `qwen3:8b` model via `ollama` provider. You can visit the [Ollama](https://ollama.com/) site for installation instructions.
 
-> :warning: Codestral is a 22b parameter model, you can experiment with smaller models but take into account that the results may vary.
-
-If you want to use a different model or provider you can configure the default options in the `pyproject.toml` of your project:
+`qwen3:8b` has relatively good performance while fitting in an RTX 4060 GPU (8GB VRAM). However, if you want to use a different model or provider you can configure the default options in the `pyproject.toml` of your project like this:
 
 ```toml
 [tool.dolce]
@@ -70,7 +75,7 @@ provider = "ollama"
 api_key = "YOUR_API_KEY_ENVIROMENT_VAR"
 ```
 
-## Signature check
+### Signature check
 
 Signature check is done vía [docsig](https://docsig.readthedocs.io/en/latest/index.html). If you add a `[tool.docsig]` config section in your `pyproject.toml` file, **dolce** will load it to configure the signature check.
 
@@ -92,7 +97,6 @@ target = [
     "SIG201",
 ]
 ```
-
 
 ## To be implemented
 
