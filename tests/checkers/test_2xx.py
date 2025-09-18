@@ -15,7 +15,7 @@ def test_invalid_docstring_style(code_segment_from: Callable, ctx: RuleContext) 
         """
         return 3
 
-    segment = code_segment_from(func_with_invalid_docstring_style)
+    segment = code_segment_from(func_with_invalid_docstring_style)[0]
     ctx.config.update(ensure_style="google")
 
     result = invalid_docstring_style(segment, ctx)

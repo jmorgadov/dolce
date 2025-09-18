@@ -32,7 +32,7 @@ def test_duplicate_params(code_segment_from: Callable) -> None:
         """
         return None
 
-    segment = code_segment_from(func_with_duplicate_params)
+    segment = code_segment_from(func_with_duplicate_params)[0]
 
     result = duplicate_params(segment, None)
     assert result is not None
@@ -51,7 +51,7 @@ def test_missing_param(code_segment_from: Callable, ctx: RuleContext) -> None:
         """
         return None
 
-    segment = code_segment_from(func_with_missing_param)
+    segment = code_segment_from(func_with_missing_param)[0]
 
     result = missing_param(segment, ctx)
     assert result is not None
@@ -70,7 +70,7 @@ def test_missing_param_description(code_segment_from: Callable) -> None:
         """
         return None
 
-    segment = code_segment_from(func_with_missing_param_description)
+    segment = code_segment_from(func_with_missing_param_description)[0]
 
     result = missing_param_description(segment, None)
     assert result is not None
@@ -89,7 +89,7 @@ def test_missing_param_type(code_segment_from: Callable) -> None:
         """
         return None
 
-    segment = code_segment_from(func_with_missing_param_type)
+    segment = code_segment_from(func_with_missing_param_type)[0]
 
     result = missing_param_type(segment, None)
     assert result is not None
@@ -108,7 +108,7 @@ def test_wrong_param_type(code_segment_from: Callable) -> None:
         """
         return None
 
-    segment = code_segment_from(func_with_wrong_param_type)
+    segment = code_segment_from(func_with_wrong_param_type)[0]
 
     result = wrong_param_type(segment, None)
     assert result is not None
@@ -128,7 +128,7 @@ def test_params_does_not_exist(code_segment_from: Callable) -> None:
         """
         return None
 
-    segment = code_segment_from(func_with_params_does_not_exist)
+    segment = code_segment_from(func_with_params_does_not_exist)[0]
 
     result = params_does_not_exist(segment, None)
     assert result is not None
@@ -144,7 +144,7 @@ def test_missing_return(code_segment_from: Callable, ctx: RuleContext) -> None:
         """
         return param
 
-    segment = code_segment_from(func_with_missing_return)
+    segment = code_segment_from(func_with_missing_return)[0]
 
     result = missing_return(segment, ctx)
     assert result is not None
@@ -159,7 +159,7 @@ def test_missing_return(code_segment_from: Callable, ctx: RuleContext) -> None:
         """
         yield param
 
-    segment = code_segment_from(generator_with_missing_yield)
+    segment = code_segment_from(generator_with_missing_yield)[0]
     result = missing_return(segment, ctx)
     assert result is None  # Should be ignored
 
@@ -176,7 +176,7 @@ def test_missing_return_description(code_segment_from: Callable) -> None:
         """
         return param
 
-    segment = code_segment_from(func_with_missing_return_description)
+    segment = code_segment_from(func_with_missing_return_description)[0]
 
     result = missing_return_description(segment, None)
     assert result is not None
@@ -195,7 +195,7 @@ def test_wrong_return_type(code_segment_from: Callable) -> None:
         """
         return str(param)
 
-    segment = code_segment_from(func_with_wrong_return_type)
+    segment = code_segment_from(func_with_wrong_return_type)[0]
 
     result = wrong_return_type(segment, None)
     assert result is not None
@@ -214,7 +214,7 @@ def test_unnecessary_return(code_segment_from: Callable, ctx: RuleContext) -> No
         """
         return param
 
-    segment = code_segment_from(func_with_unnecessary_return)
+    segment = code_segment_from(func_with_unnecessary_return)[0]
 
     result = unnecessary_return(segment, ctx)
     assert result is not None
@@ -232,7 +232,7 @@ def test_unnecessary_return(code_segment_from: Callable, ctx: RuleContext) -> No
         """
         yield param
 
-    segment = code_segment_from(generator_with_unnecessary_yield)
+    segment = code_segment_from(generator_with_unnecessary_yield)[0]
     result = unnecessary_return(segment, ctx)
     assert result is None  # Should be ignored
 
@@ -246,7 +246,7 @@ def test_missing_yield(code_segment_from: Callable, ctx: RuleContext) -> None:
         """
         yield param
 
-    segment = code_segment_from(generator_with_missing_yield)
+    segment = code_segment_from(generator_with_missing_yield)[0]
 
     result = missing_yield(segment, ctx)
     assert result is not None
@@ -264,7 +264,7 @@ def test_missing_yield(code_segment_from: Callable, ctx: RuleContext) -> None:
         """
         return param
 
-    segment = code_segment_from(func_with_missing_return)
+    segment = code_segment_from(func_with_missing_return)[0]
     result = missing_yield(segment, ctx)
     assert result is None  # Should be ignored
 
@@ -281,7 +281,7 @@ def test_missing_yield_description(code_segment_from: Callable) -> None:
         """
         yield param
 
-    segment = code_segment_from(generator_with_missing_yield_description)
+    segment = code_segment_from(generator_with_missing_yield_description)[0]
 
     result = missing_yield_description(segment, None)
     assert result is not None
@@ -300,7 +300,7 @@ def test_wrong_yield_type(code_segment_from: Callable) -> None:
         """
         yield str(param)
 
-    segment = code_segment_from(generator_with_wrong_yield_type)
+    segment = code_segment_from(generator_with_wrong_yield_type)[0]
 
     result = wrong_yield_type(segment, None)
     assert result is not None
@@ -319,7 +319,7 @@ def test_unnecessary_yield(code_segment_from: Callable, ctx: RuleContext) -> Non
         """
         return param
 
-    segment = code_segment_from(func_with_unnecessary_return)
+    segment = code_segment_from(func_with_unnecessary_return)[0]
     result = unnecessary_yield(segment, ctx)
     assert result is not None
     assert not result.passed
@@ -335,6 +335,6 @@ def test_unnecessary_yield(code_segment_from: Callable, ctx: RuleContext) -> Non
         """
         return param
 
-    segment = code_segment_from(func_with_unnecessary_return)
+    segment = code_segment_from(func_with_unnecessary_return)[0]
     result = unnecessary_yield(segment, ctx)
     assert result is None  # Should be ignored

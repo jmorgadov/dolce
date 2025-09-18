@@ -1,10 +1,11 @@
+import ast
 import inspect
 from typing import Callable
 
 import pytest
 
 from pydolce.config import DolceConfig
-from pydolce.parser import CodeSegment
+from pydolce.parser import CodeSegment, CodeSegmentVisitor
 from pydolce.rules.rules import RuleContext
 
 
@@ -36,10 +37,11 @@ def ctx() -> RuleContext:
 
 @pytest.fixture
 def code_segment_from() -> Callable[[Callable], CodeSegment]:
-    def _code_segment_from(func: Callable) -> CodeSegment:
+    def _code_segment_from(func: Callable) -> list[CodeSegment]:
         code_str = inspect.getsource(func)
         code_str = _unindent_all_possible(code_str)
-        segments = CodeSegment.from_str_code(code_str, "dummy.py")
-        return next(segments)
+        visitor = CodeSegmentVisitor("dummy.py")
+        visitor.visit(ast.parse(code_str))
+        return visitor.segments
 
     return _code_segment_from

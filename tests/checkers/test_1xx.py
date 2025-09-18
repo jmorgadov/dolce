@@ -10,7 +10,7 @@ def test_missing_func_docstring(code_segment_from: Callable) -> None:
     def func_with_invalid_docstring() -> int:
         return 3
 
-    segment = code_segment_from(func_with_invalid_docstring)
+    segment = code_segment_from(func_with_invalid_docstring)[0]
 
     result = missing_func_docstring(segment, None)
     assert result is not None

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from pydolce.parser import CodeSegment, CodeSegmentType
+from pydolce.parser import CodeSegment, CodeSegmentType, Scopes
 from pydolce.rules.rules import Rule, RuleContext, RuleResult
 
 _INDEX = int(Path(__file__).stem[1]) * 100
@@ -17,12 +17,17 @@ def _id(n: int) -> int:
 # ----------------------------------------------------------------
 
 
-@Rule.register(_id(1), "Parameter in signature is not documented.")
+@Rule.register(
+    _id(1), "Parameter in signature is not documented.", scopes=Scopes.functions()
+)
 def missing_param(segment: CodeSegment, ctx: RuleContext) -> RuleResult | None:
     if not segment.doc or segment.parsed_doc is None:
         return None
 
     func_params = list(segment.params.keys()) if segment.params else []
+    if "self" in func_params:
+        func_params.remove("self")
+
     if not ctx.config.ignore_args and segment.args_name:
         func_params.append(segment.args_name)
     if not ctx.config.ignore_kwargs and segment.kwargs_name:
@@ -39,7 +44,9 @@ def missing_param(segment: CodeSegment, ctx: RuleContext) -> RuleResult | None:
     )
 
 
-@Rule.register(_id(2), "Missing parameter type in docstring.")
+@Rule.register(
+    _id(2), "Missing parameter type in docstring.", scopes=Scopes.functions()
+)
 def missing_param_type(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
     if not segment.params or segment.parsed_doc is None or not segment.doc:
         return None
@@ -51,7 +58,11 @@ def missing_param_type(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | 
     )
 
 
-@Rule.register(_id(3), "Parameter documented type does not match signature.")
+@Rule.register(
+    _id(3),
+    "Parameter documented type does not match signature.",
+    scopes=Scopes.functions(),
+)
 def wrong_param_type(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
     if segment.params is None or not segment.params or segment.parsed_doc is None:
         return None
@@ -82,7 +93,7 @@ def wrong_param_type(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | No
     return RuleResult.bad_if_any(errors)
 
 
-@Rule.register(_id(4), "Missing parameter description.")
+@Rule.register(_id(4), "Missing parameter description.", scopes=Scopes.functions())
 def missing_param_description(
     segment: CodeSegment, _ctx: RuleContext
 ) -> RuleResult | None:
@@ -96,7 +107,11 @@ def missing_param_description(
     )
 
 
-@Rule.register(_id(5), "Documented parameter does not exist in signature.")
+@Rule.register(
+    _id(5),
+    "Documented parameter does not exist in signature.",
+    scopes=Scopes.functions(),
+)
 def params_does_not_exist(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
     if (
         segment.params is None
@@ -113,7 +128,11 @@ def params_does_not_exist(segment: CodeSegment, _ctx: RuleContext) -> RuleResult
     )
 
 
-@Rule.register(_id(6), "Parameter is documented multiple times in the docstring.")
+@Rule.register(
+    _id(6),
+    "Parameter is documented multiple times in the docstring.",
+    scopes=Scopes.functions(),
+)
 def duplicate_params(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
     if segment.parsed_doc is None:
         return None
@@ -140,14 +159,14 @@ def duplicate_params(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | No
 # ----------------------------------------------------------------
 
 
-@Rule.register(_id(21), "Missing return section in docstring.", pydoclint_rule="DOC201")
+@Rule.register(
+    _id(21),
+    "Missing return section in docstring.",
+    scopes=Scopes.functions(),
+    pydoclint_rule="DOC201",
+)
 def missing_return(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
-    if (
-        segment.seg_type != CodeSegmentType.Function
-        or segment.parsed_doc is None
-        or not segment.doc
-        or segment.is_generator
-    ):
+    if segment.parsed_doc is None or not segment.doc or segment.is_generator:
         return None
 
     if segment.returns is not None and segment.returns == "None":
@@ -156,12 +175,10 @@ def missing_return(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None
     return RuleResult.check(segment.parsed_doc.returns is not None)
 
 
-@Rule.register(_id(22), "Missing return description.")
+@Rule.register(_id(22), "Missing return description.", scopes=Scopes.functions())
 def missing_return_description(
     segment: CodeSegment, _ctx: RuleContext
 ) -> RuleResult | None:
-    if segment.seg_type != CodeSegmentType.Function:
-        return None
     if (
         segment.parsed_doc is None
         or segment.parsed_doc.returns is None
@@ -177,11 +194,12 @@ def missing_return_description(
     )
 
 
-@Rule.register(_id(23), "Return type does not match signature.")
+@Rule.register(
+    _id(23), "Return type does not match signature.", scopes=Scopes.functions()
+)
 def wrong_return_type(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
     if (
-        not segment.is_func
-        or segment.real_return_type is None
+        segment.real_return_type is None
         or not segment.has_return_doc
         or segment.parsed_doc is None
         or segment.parsed_doc.returns is None
@@ -197,12 +215,14 @@ def wrong_return_type(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | N
 
 
 @Rule.register(
-    _id(24), "Unnecessary return section in docstring.", pydoclint_rule="DOC202"
+    _id(24),
+    "Unnecessary return section in docstring.",
+    scopes=Scopes.functions(),
+    pydoclint_rule="DOC202",
 )
 def unnecessary_return(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
     if (
-        not segment.is_func
-        or segment.doc_return_type is None
+        segment.doc_return_type is None
         or not segment.has_return_doc
         or segment.is_generator
     ):
@@ -218,11 +238,15 @@ def unnecessary_return(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | 
 # ----------------------------------------------------------------
 
 
-@Rule.register(_id(41), "Missing yield section in docstring.", pydoclint_rule="DOC402")
+@Rule.register(
+    _id(41),
+    "Missing yield section in docstring.",
+    scopes=Scopes.functions(),
+    pydoclint_rule="DOC402",
+)
 def missing_yield(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
     if (
-        not segment.is_func
-        or segment.real_return_type is None
+        segment.real_return_type is None
         or segment.parsed_doc is None
         or not segment.is_generator
     ):
@@ -237,14 +261,13 @@ def missing_yield(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
     )
 
 
-@Rule.register(_id(42), "Missing yield description.")
+@Rule.register(_id(42), "Missing yield description.", scopes=Scopes.functions())
 def missing_yield_description(
     segment: CodeSegment, _ctx: RuleContext
 ) -> RuleResult | None:
-    if not segment.is_func or segment.parsed_doc is None:
-        return None
     if (
-        not segment.is_generator
+        segment.parsed_doc is None
+        or not segment.is_generator
         or segment.parsed_doc.returns is None
         or not segment.parsed_doc.returns.is_generator
     ):
@@ -256,11 +279,12 @@ def missing_yield_description(
     )
 
 
-@Rule.register(_id(43), "Yield type does not match signature.")
+@Rule.register(
+    _id(43), "Yield type does not match signature.", scopes=Scopes.functions()
+)
 def wrong_yield_type(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
     if (
-        not segment.is_func
-        or segment.real_return_type is None
+        segment.real_return_type is None
         or segment.parsed_doc is None
         or segment.parsed_doc.returns is None
         or not segment.parsed_doc.returns.is_generator
@@ -277,9 +301,11 @@ def wrong_yield_type(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | No
     )
 
 
-@Rule.register(_id(44), "Invalid yield section in docstring.", pydoclint_rule="DOC403")
+@Rule.register(
+    _id(44),
+    "Invalid yield section in docstring.",
+    scopes=Scopes.functions(),
+    pydoclint_rule="DOC403",
+)
 def unnecessary_yield(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
-    if not segment.is_func or not segment.has_yield_doc:
-        return None
-
     return RuleResult.check(not segment.has_yield_doc or segment.is_generator)

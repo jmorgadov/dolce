@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from pydolce.config import DolceConfig
 
 import pydolce
-from pydolce.parser import CodeSegment
+from pydolce.parser import CodeSegment, CodeSegmentType
 
 DEFAULT_PREFIX = "DCE"
 
@@ -84,7 +84,11 @@ class Rule:
         description: str,
         prompter: LLMRulePrompter | None = None,
         checker: RuleChecker | None = None,
+        scopes: list[CodeSegmentType] | None = None,
     ):
+        """
+        A rule for checking docstrings.
+        """
         self.name = name
         self.code = code
         self.ref = f"{DEFAULT_PREFIX}{code:03d}"
@@ -92,6 +96,7 @@ class Rule:
         self.prompter = prompter
         self.checker = checker
         self.group = code // 100
+        self.scopes = scopes
 
     @property
     def group_name(self) -> str:
@@ -131,10 +136,11 @@ class Rule:
         pydoclint_rule: str | None = None,
         pydocstyle_rule: str | None = None,
         docsig_rule: str | None = None,
+        scopes: list[CodeSegmentType] | None = None,
     ) -> Callable:
         def decorator(func: RuleChecker) -> Callable:
             rule_name = func.__name__.replace("_", "-")
-            rule = Rule(code, rule_name, description, checker=func)
+            rule = Rule(code, rule_name, description, checker=func, scopes=scopes)
 
             cls._register(rule)
             if pydoclint_rule is not None:
@@ -152,10 +158,12 @@ class Rule:
         return decorator
 
     @classmethod
-    def llm_register(cls, code: int, description: str) -> Callable:
+    def llm_register(
+        cls, code: int, description: str, scopes: list[CodeSegmentType] | None = None
+    ) -> Callable:
         def decorator(func: LLMRulePrompter) -> Callable:
             rule_name = func.__name__.replace("_", "-")
-            rule = Rule(code, rule_name, description, prompter=func)
+            rule = Rule(code, rule_name, description, prompter=func, scopes=scopes)
             cls._register(rule)
             func.__dict__["rule_ref"] = rule.ref
             return func
@@ -165,6 +173,11 @@ class Rule:
     @classmethod
     def is_ref_registered(cls, ref: str) -> bool:
         return ref in cls.all_rules
+
+    def aplicable_to(self, seg_type: CodeSegmentType) -> bool:
+        if self.scopes is None:
+            return True
+        return seg_type in self.scopes
 
 
 class RuleSet:
@@ -194,7 +207,7 @@ class RuleSet:
     def check(self, segment: CodeSegment, ctx: RuleContext) -> list[str]:
         issues = []
         for rule in self.rules:
-            if rule.checker is not None:
+            if rule.checker is not None and rule.aplicable_to(segment.seg_type):
                 result = rule.checker(segment, ctx)
                 if result is None or result.passed:
                     continue

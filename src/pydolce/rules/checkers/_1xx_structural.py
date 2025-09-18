@@ -2,7 +2,7 @@ from pathlib import Path
 
 import docstring_parser
 
-from pydolce.parser import CodeSegment, CodeSegmentType
+from pydolce.parser import CodeSegment, Scopes
 from pydolce.rules.rules import Rule, RuleContext, RuleResult
 
 _INDEX = int(Path(__file__).stem[1]) * 100
@@ -27,19 +27,49 @@ def invalid_docstring_syntax(
     return RuleResult.good()
 
 
-@Rule.register(_id(2), "Function is missing a docstring.", pydocstyle_rule="D103")
-def missing_func_docstring(
+@Rule.register(
+    _id(2),
+    "Module is missing a docstring.",
+    scopes=Scopes.modules(),
+    pydocstyle_rule="D100",
+)
+def missing_module_docstring(
     segment: CodeSegment, _ctx: RuleContext
 ) -> RuleResult | None:
-    if segment.seg_type == CodeSegmentType.Function and not segment.doc.strip():
-        return RuleResult.bad()
-    return RuleResult.good()
+    return RuleResult.check(bool(segment.doc.strip()))
 
 
-@Rule.register(_id(3), "Class is missing a docstring.", pydocstyle_rule="D101")
+@Rule.register(
+    _id(3),
+    "Class is missing a docstring.",
+    scopes=Scopes.classes(),
+    pydocstyle_rule="D101",
+)
 def missing_class_docstring(
     segment: CodeSegment, _ctx: RuleContext
 ) -> RuleResult | None:
-    if segment.seg_type == CodeSegmentType.Class and not segment.doc.strip():
-        return RuleResult.bad()
-    return RuleResult.good()
+    return RuleResult.check(bool(segment.doc.strip()))
+
+
+@Rule.register(
+    _id(4),
+    "Method is missing a docstring.",
+    scopes=Scopes.methods(),
+    pydocstyle_rule="D102",
+)
+def missing_method_docstring(
+    segment: CodeSegment, _ctx: RuleContext
+) -> RuleResult | None:
+    return RuleResult.check(bool(segment.doc.strip()))
+
+
+@Rule.register(
+    _id(5),
+    "Function is missing a docstring.",
+    scopes=Scopes.non_method_funcs(),
+    pydocstyle_rule="D103",
+)
+def missing_func_docstring(
+    segment: CodeSegment, _ctx: RuleContext
+) -> RuleResult | None:
+    return RuleResult.check(bool(segment.doc.strip()))
