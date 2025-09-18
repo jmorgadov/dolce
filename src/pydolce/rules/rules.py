@@ -41,7 +41,7 @@ class RuleResult:
         return RuleResult.good()
 
     @staticmethod
-    def from_bool(passed: bool, issue: str | None = None) -> RuleResult:
+    def check(passed: bool, issue: str | None = None) -> RuleResult:
         if passed:
             return RuleResult.good()
         return RuleResult.bad([issue] if issue else [])
@@ -58,6 +58,24 @@ LLMRulePrompter = Callable[[CodeSegment, RuleContext], str | None]
 
 class Rule:
     all_rules: ClassVar[dict[str, Rule]] = {}
+
+    """
+    Migration schema from pydoclint. Keys are pydoclint rule reference, values
+    are corresponding pydolce rule references.
+    """
+    pydoclint_mig: ClassVar[dict[str, str]] = {}  # Will be filled at rule registration
+
+    """
+    Migration schema to from pydocstyle. Keys are pydolce rule reference,
+    values are corresponding pydocstyle rule references.
+    """
+    pydocstyle_mig: ClassVar[dict[str, str]] = {}  # Will be filled at rule registration
+
+    """
+    Migration schema from docsig. Keys are docsig rule reference, values are
+    corresponding pydolce rule references.
+    """
+    docsig_mig: ClassVar[dict[str, str]] = {}  # Will be filled at rule registration
 
     def __init__(
         self,
@@ -85,11 +103,49 @@ class Rule:
         cls.all_rules[rule.ref] = rule
 
     @classmethod
-    def register(cls, code: int, description: str) -> Callable:
+    def _pydoclint_mig_register(cls, pydoclint_rule: str, rule_ref: str) -> None:
+        assert pydoclint_rule not in cls.pydoclint_mig, (
+            f"Pydoclint rule {pydoclint_rule} already mapped to {cls.pydoclint_mig[pydoclint_rule]}"
+        )
+        cls.pydoclint_mig[pydoclint_rule] = rule_ref
+
+    @classmethod
+    def _pydocstyle_mig_register(cls, pydocstyle_rule: str, rule_ref: str) -> None:
+        assert rule_ref not in cls.pydocstyle_mig, (
+            f"Pydolce rule {rule_ref} already mapped to {cls.pydocstyle_mig[rule_ref]}"
+        )
+        cls.pydocstyle_mig[rule_ref] = pydocstyle_rule
+
+    @classmethod
+    def _docsig_mig_register(cls, docsig_rule: str, rule_ref: str) -> None:
+        assert docsig_rule not in cls.docsig_mig, (
+            f"Docsig rule {docsig_rule} already mapped to {cls.docsig_mig[docsig_rule]}"
+        )
+        cls.docsig_mig[docsig_rule] = rule_ref
+
+    @classmethod
+    def register(
+        cls,
+        code: int,
+        description: str,
+        pydoclint_rule: str | None = None,
+        pydocstyle_rule: str | None = None,
+        docsig_rule: str | None = None,
+    ) -> Callable:
         def decorator(func: RuleChecker) -> Callable:
             rule_name = func.__name__.replace("_", "-")
             rule = Rule(code, rule_name, description, checker=func)
+
             cls._register(rule)
+            if pydoclint_rule is not None:
+                cls._pydoclint_mig_register(pydoclint_rule, rule.ref)
+
+            if pydocstyle_rule is not None:
+                cls._pydocstyle_mig_register(pydocstyle_rule, rule.ref)
+
+            if docsig_rule is not None:
+                cls._docsig_mig_register(docsig_rule, rule.ref)
+
             func.__dict__["rule_ref"] = rule.ref
             return func
 

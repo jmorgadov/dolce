@@ -65,10 +65,34 @@ def rules() -> None:
         )
 
 
+@app.command()
+def migrations() -> None:
+    if not Rule.pydoclint_mig:
+        rich.print("[yellow]No pydoclint migration data available.[/yellow]")
+    else:
+        rich.print("[bold magenta]Pydoclint to Dolce migration:[/bold magenta]")
+        for pydoclint_ref, dolce_ref in Rule.pydoclint_mig.items():
+            rich.print(f"[cyan]{pydoclint_ref}[/cyan] -> [green]{dolce_ref}[/green]")
+
+    if not Rule.pydocstyle_mig:
+        rich.print("\n[yellow]No pydocstyle migration data available.[/yellow]")
+    else:
+        rich.print("\n[bold magenta]Pydocstyle to Dolce migration:[/bold magenta]")
+        for pydocstyle_ref, dolce_ref in Rule.pydocstyle_mig.items():
+            rich.print(f"[cyan]{dolce_ref}[/cyan] -> [green]{pydocstyle_ref}[/green]")
+
+    if not Rule.docsig_mig:
+        rich.print("\n[yellow]No docsig migration data available.[/yellow]")
+    else:
+        rich.print("\n[bold magenta]Docsig to Dolce migration:[/bold magenta]")
+        for docsig_ref, dolce_ref in Rule.docsig_mig.items():
+            rich.print(f"[cyan]{docsig_ref}[/cyan] -> [green]{dolce_ref}[/green]")
+
+
 @app.callback()
 def main_callback() -> None:
     version = pydolce.__version__
-    rich.print(f"[magenta]Dolce - {version}[/magenta]")
+    rich.print(f"[magenta]Dolce - {version}[/magenta]\n")
 
 
 def main() -> None:

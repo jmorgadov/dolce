@@ -27,7 +27,7 @@ def invalid_docstring_syntax(
     return RuleResult.good()
 
 
-@Rule.register(_id(2), "Function is missing a docstring.")
+@Rule.register(_id(2), "Function is missing a docstring.", pydocstyle_rule="D103")
 def missing_func_docstring(
     segment: CodeSegment, _ctx: RuleContext
 ) -> RuleResult | None:
@@ -36,7 +36,7 @@ def missing_func_docstring(
     return RuleResult.good()
 
 
-@Rule.register(_id(3), "Class is missing a docstring.")
+@Rule.register(_id(3), "Class is missing a docstring.", pydocstyle_rule="D101")
 def missing_class_docstring(
     segment: CodeSegment, _ctx: RuleContext
 ) -> RuleResult | None:

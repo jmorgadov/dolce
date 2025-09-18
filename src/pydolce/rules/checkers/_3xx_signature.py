@@ -10,6 +10,13 @@ def _id(n: int) -> int:
     return _INDEX + n
 
 
+# ----------------------------------------------------------------
+#
+#   Parameters related rules
+#
+# ----------------------------------------------------------------
+
+
 @Rule.register(_id(1), "Parameter in signature is not documented.")
 def missing_param(segment: CodeSegment, ctx: RuleContext) -> RuleResult | None:
     if not segment.doc or segment.parsed_doc is None:
@@ -126,19 +133,27 @@ def duplicate_params(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | No
     return RuleResult.bad_if_any(errors)
 
 
-@Rule.register(_id(21), "Missing return section in docstring.")
+# ----------------------------------------------------------------
+#
+#   Returns related rules
+#
+# ----------------------------------------------------------------
+
+
+@Rule.register(_id(21), "Missing return section in docstring.", pydoclint_rule="DOC201")
 def missing_return(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
     if (
         segment.seg_type != CodeSegmentType.Function
         or segment.parsed_doc is None
         or not segment.doc
+        or segment.is_generator
     ):
         return None
 
     if segment.returns is not None and segment.returns == "None":
         return RuleResult.good()
 
-    return RuleResult.from_bool(segment.parsed_doc.returns is not None)
+    return RuleResult.check(segment.parsed_doc.returns is not None)
 
 
 @Rule.register(_id(22), "Missing return description.")
@@ -151,28 +166,118 @@ def missing_return_description(
         segment.parsed_doc is None
         or segment.parsed_doc.returns is None
         or (segment.returns is not None and segment.returns == "None")
+        or segment.is_generator
+        or not segment.has_return_doc
     ):
         return None
 
     ret = segment.parsed_doc.returns
-    return RuleResult.from_bool(
+    return RuleResult.check(
         ret.description is not None and ret.description.strip() != ""
     )
 
 
-@Rule.register(_id(23), "Return documented type does not match signature.")
+@Rule.register(_id(23), "Return type does not match signature.")
 def wrong_return_type(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
-    if segment.seg_type != CodeSegmentType.Function:
-        return None
     if (
-        segment.returns is None
-        or not segment.returns
+        not segment.is_func
+        or segment.real_return_type is None
+        or not segment.has_return_doc
         or segment.parsed_doc is None
         or segment.parsed_doc.returns is None
+        or segment.parsed_doc.returns.is_generator
+        or segment.is_generator
     ):
         return None
 
-    return RuleResult.from_bool(
-        segment.returns == segment.parsed_doc.returns.type_name,
-        f"Return type is '{segment.returns}' but declared '{segment.parsed_doc.returns.type_name}' in docstring.",
+    return RuleResult.check(
+        segment.real_return_type == segment.doc_return_type,
+        f"Return type is '{segment.real_return_type}' but declared '{segment.doc_return_type}' in docstring.",
     )
+
+
+@Rule.register(
+    _id(24), "Unnecessary return section in docstring.", pydoclint_rule="DOC202"
+)
+def unnecessary_return(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
+    if (
+        not segment.is_func
+        or segment.doc_return_type is None
+        or not segment.has_return_doc
+    ):
+        return None
+
+    return RuleResult.check(segment.returns != "None")
+
+
+# ----------------------------------------------------------------
+#
+#   Yields related rules
+#
+# ----------------------------------------------------------------
+
+
+@Rule.register(_id(41), "Missing yield section in docstring.", pydoclint_rule="DOC402")
+def missing_yield(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
+    if (
+        not segment.is_func
+        or segment.real_return_type is None
+        or segment.parsed_doc is None
+    ):
+        return None
+
+    return RuleResult.check(
+        not segment.is_generator
+        or (
+            segment.parsed_doc.returns is not None
+            and segment.parsed_doc.returns.is_generator
+        )
+    )
+
+
+@Rule.register(_id(42), "Missing yield description.")
+def missing_yield_description(
+    segment: CodeSegment, _ctx: RuleContext
+) -> RuleResult | None:
+    if not segment.is_func or segment.parsed_doc is None:
+        return None
+    if (
+        not segment.is_generator
+        or segment.parsed_doc.returns is None
+        or not segment.parsed_doc.returns.is_generator
+    ):
+        return None
+
+    ret = segment.parsed_doc.returns
+    return RuleResult.check(
+        ret.description is not None and ret.description.strip() != ""
+    )
+
+
+@Rule.register(_id(43), "Yield type does not match signature.")
+def wrong_yield_type(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
+    if (
+        not segment.is_func
+        or segment.real_return_type is None
+        or segment.parsed_doc is None
+        or segment.parsed_doc.returns is None
+        or not segment.parsed_doc.returns.is_generator
+        or not segment.is_generator
+        or (
+            segment.is_generator and segment.generator_type is None
+        )  # No type specified
+    ):
+        return None
+
+    return RuleResult.check(
+        segment.generator_type == segment.parsed_doc.returns.type_name,
+        f"Yield type is '{segment.generator_type}' but declared '{segment.parsed_doc.returns.type_name}' in docstring.",
+    )
+
+
+@Rule.register(_id(44), "Invalid yield section in docstring.", pydoclint_rule="DOC403")
+def unnecessary_yield(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
+    if not segment.is_func or not segment.has_yield_doc:
+        return None
+
+    return RuleResult.check(not segment.has_yield_doc or segment.is_generator)
