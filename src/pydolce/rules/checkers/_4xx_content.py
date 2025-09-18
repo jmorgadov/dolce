@@ -1,8 +1,16 @@
+from pathlib import Path
+
 from pydolce.parser import CodeSegment
 from pydolce.rules.rules import Rule, RuleContext
 
+_INDEX = int(Path(__file__).stem[1]) * 100
 
-@Rule.llm_register(301, "Docstring description contains spelling errors.")
+
+def _id(n: int) -> int:
+    return _INDEX + n
+
+
+@Rule.llm_register(_id(1), "Docstring description contains spelling errors.")
 def description_spelling(segment: CodeSegment, _ctx: RuleContext) -> str | None:
     return (
         "The docstring DESCRIPTION contains TYPOS. Examples: 'functon' instead of 'function', "
@@ -10,7 +18,7 @@ def description_spelling(segment: CodeSegment, _ctx: RuleContext) -> str | None:
     )
 
 
-@Rule.llm_register(302, "Docstring parameter description contains spelling errors.")
+@Rule.llm_register(_id(2), "Docstring parameter description contains spelling errors.")
 def param_desc_spelling(segment: CodeSegment, _ctx: RuleContext) -> str | None:
     return (
         "The description of some PARAMETERS contains TYPOS. Examples: 'functon' instead of 'function', "
@@ -18,7 +26,7 @@ def param_desc_spelling(segment: CodeSegment, _ctx: RuleContext) -> str | None:
     )
 
 
-@Rule.llm_register(303, "Docstring return description contains spelling errors.")
+@Rule.llm_register(_id(3), "Docstring return description contains spelling errors.")
 def return_desc_spelling(segment: CodeSegment, _ctx: RuleContext) -> str | None:
     return (
         "The description of the RETURN VALUE contains TYPOS. Examples: 'functon' instead of 'function', "

@@ -131,3 +131,6 @@ version_pattern = "MAJOR.MINOR.PATCH[-TAGNUM]"
 [tool.bumpver.file_patterns]
 "pyproject.toml" = ['^version = "{version}"', '^current_version = "{version}"']
 "src/pydolce/__init__.py" = ['^__version__ = "{version}"$']
+
+[tool.dolce]
+ensure_style = "google"

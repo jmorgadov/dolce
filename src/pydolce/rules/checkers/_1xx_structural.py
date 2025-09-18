@@ -1,14 +1,22 @@
+from pathlib import Path
+
 import docstring_parser
 
 from pydolce.parser import CodeSegment, CodeSegmentType
 from pydolce.rules.rules import Rule, RuleContext, RuleResult
 
+_INDEX = int(Path(__file__).stem[1]) * 100
 
-@Rule.register(101, "Docstring has invalid syntax.")
+
+def _id(n: int) -> int:
+    return _INDEX + n
+
+
+@Rule.register(_id(1), "Docstring has invalid syntax.")
 def invalid_docstring_syntax(
     segment: CodeSegment, _ctx: RuleContext
 ) -> RuleResult | None:
-    if segment.parsed_doc is not None:
+    if segment.parsed_doc is None:
         return None
 
     try:
@@ -19,7 +27,7 @@ def invalid_docstring_syntax(
     return RuleResult.good()
 
 
-@Rule.register(102, "Function is missing a docstring.")
+@Rule.register(_id(2), "Function is missing a docstring.")
 def missing_func_docstring(
     segment: CodeSegment, _ctx: RuleContext
 ) -> RuleResult | None:
@@ -28,7 +36,7 @@ def missing_func_docstring(
     return RuleResult.good()
 
 
-@Rule.register(103, "Class is missing a docstring.")
+@Rule.register(_id(3), "Class is missing a docstring.")
 def missing_class_docstring(
     segment: CodeSegment, _ctx: RuleContext
 ) -> RuleResult | None:

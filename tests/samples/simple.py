@@ -6,6 +6,7 @@ def fibonacci(n: int) -> int:
     """Return the nth Fibonacci number.
 
     Args
+    ----
     n : int
         The position in the Fibonacci sequence.
     Returns:

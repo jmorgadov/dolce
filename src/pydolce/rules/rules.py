@@ -1,22 +1,22 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING, Callable, ClassVar, Generator, Iterable
 
 if TYPE_CHECKING:
     from pydolce.config import DolceConfig
 
+import pydolce
 from pydolce.parser import CodeSegment
 
 DEFAULT_PREFIX = "DCE"
 
 
 _GROUPS = {
-    1: "Structural",
-    2: "Signature",
-    3: "Content",
-    4: "Integrity",
-    6: "Semantic",
+    int(p.stem[1]): p.stem[5:].capitalize()
+    for i, p in enumerate((Path(pydolce.rules.__path__[0]) / "checkers").glob("*.py"))
+    if p.stem != "__init__"
 }
 
 

@@ -61,14 +61,14 @@ def rules() -> None:
             rich.print(f"[bold magenta]\n{rule.group_name} rules:[/bold magenta]")
             last_group = rule.group
         rich.print(
-            f"[cyan][{rule.ref}][/cyan] [white]{rule.name + ' ':.<30}[/white] {rule.description}"
+            f"[cyan][{rule.ref}][/cyan] [white]{rule.name + ' ':.<35}[/white] {rule.description}"
         )
 
 
 @app.callback()
 def main_callback() -> None:
     version = pydolce.__version__
-    rich.print(f"[magenta]Dolce - {version}[/magenta]\n")
+    rich.print(f"[magenta]Dolce - {version}[/magenta]")
 
 
 def main() -> None:

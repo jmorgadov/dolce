@@ -128,8 +128,6 @@ def check_description(
     assert all(r.prompter is not None for r in rules), "All llm rules must have prompts"
 
     rule_prompts = [r.prompter(codeseg, ctx) for r in rules if r.prompter is not None]
-
-    # Filter aplicable rules
     filtered_rules = [r for r, rp in zip(rules, rule_prompts, strict=True) if rp]
 
     if not filtered_rules:

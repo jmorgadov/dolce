@@ -33,6 +33,7 @@ class DolceConfig:
     exclude: list[str] | None = None
     ignore_args: bool = False
     ignore_kwargs: bool = False
+    ensure_style: str | None = None  # e.g., "google", "numpy", "sphinx"
 
     rule_set: RuleSet | None = None
 
