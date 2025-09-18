@@ -27,15 +27,14 @@ DEFAULT_EXCLUDES = [
 class DolceConfig:
     """Configuration for Dolce"""
 
-    # General options
+    # Check options
     target: list[str] | None = None  # Specific rules to target
     disable: list[str] | None = None  # Specific rules to disable
-    rule_set: RuleSet | None = None
-
     exclude: list[str] | None = None
+    ignore_args: bool = False
+    ignore_kwargs: bool = False
 
-    # Signature options
-    docsig_config: dict[str, Any] | None = None
+    rule_set: RuleSet | None = None
 
     # LLM options
     provider: str = "ollama"
@@ -71,6 +70,8 @@ class DolceConfig:
         tool = pyproject.get("tool", {})
         config = tool.get("dolce", {})
 
+        config = {k.replace("-", "_"): v for k, v in config.items()}
+
         if "target" in config or "disable" in config:
             config["rule_set"] = RuleSet(
                 target=config.get("target", None), disable=config.get("disable", None)
@@ -85,11 +86,6 @@ class DolceConfig:
         config["api_key"] = (
             None if api_key_env_var is None else os.environ.get(api_key_env_var, None)
         )
-
-        docsig = tool.get("docsig", {})
-        docsig["no_ansi"] = True
-        _docsig_config = {k.replace("-", "_"): v for k, v in docsig.items()}
-        config["docsig_config"] = _docsig_config
 
         return DolceConfig(**config)
 

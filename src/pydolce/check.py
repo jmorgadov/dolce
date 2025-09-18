@@ -15,7 +15,7 @@ from pydolce.parser import (
     DocStatus,
     code_docs_from_path,
 )
-from pydolce.rules.rules import DEFAULT_PREFIX, Rule
+from pydolce.rules.rules import DEFAULT_PREFIX, Rule, RuleContext
 
 
 def ruled_check_prompts(
@@ -123,20 +123,21 @@ def _print_summary(responses: list[CodeSegmentReport]) -> None:
 
 
 def check_description(
-    codeseg: CodeSegment, llm: LLMClient, rules: list[Rule]
+    codeseg: CodeSegment, ctx: RuleContext, llm: LLMClient, rules: list[Rule]
 ) -> CodeSegmentReport | None:
-    assert all(r.prompt is not None for r in rules), "All llm rules must have prompts"
+    assert all(r.prompter is not None for r in rules), "All llm rules must have prompts"
 
-    rule_prompts = [r.prompt(codeseg) for r in rules if r.prompt is not None]
+    rule_prompts = [r.prompter(codeseg, ctx) for r in rules if r.prompter is not None]
 
     # Filter aplicable rules
-    filtered_rules = [r for r, rp in zip(rules, rule_prompts, strict=True) if rp[0]]
+    filtered_rules = [r for r, rp in zip(rules, rule_prompts, strict=True) if rp]
 
     if not filtered_rules:
         return CodeSegmentReport.correct()
 
     rules_list = [
-        f"- {r.ref}: {p[1]}" for r, p in zip(filtered_rules, rule_prompts, strict=True)
+        f"- {rule.ref}: {prompt}"
+        for rule, prompt in zip(filtered_rules, rule_prompts, strict=True)
     ]
     sys_prompt, user_prompt = ruled_check_prompts(
         function_code=codeseg.code, rules=rules_list
@@ -203,11 +204,13 @@ def check(path: str, config: DolceConfig) -> None:
 
     reports: list[CodeSegmentReport] = []
 
+    ctx = RuleContext(config=config)
+
     for pair in code_docs_from_path(checkpath, config.exclude):
         loc = f"[blue]{pair.code_path}[/blue]"
         rich.print(f"[  ...  ] [blue]{loc}[/blue]", end="\r")
 
-        quick_issues = config.rule_set.check(pair)
+        quick_issues = config.rule_set.check(pair, ctx)
         if quick_issues:
             rich.print(f"[red][ ERROR ][/red] {loc}")
             report = CodeSegmentReport(
@@ -220,7 +223,7 @@ def check(path: str, config: DolceConfig) -> None:
             continue
 
         if llm is not None and pair.doc.strip():
-            desc_report = check_description(pair, llm, config.rule_set.llm_rules())
+            desc_report = check_description(pair, ctx, llm, config.rule_set.llm_rules())
             if desc_report is None:
                 continue
 

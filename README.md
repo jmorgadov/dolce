@@ -2,12 +2,32 @@
 
 *Because broken docs leave a bitter taste.*
 
-**Dolce** is a tool designed to help you maintain high-quality docstrings in your Python code. It leverages Large Language Models (LLMs) to ensure that your docstrings are consistent with your code.
+**Dolce** is a tool designed to help you maintain high-quality docstrings/documentation in your Python code. In addition, it leverages Large Language Models (LLMs) to ensure that your docstrings are semantically consistent with your code.
 
 ## Installation
 
+You can install **dolce** globally via pip:
+
 ```bash
 pip install pydolce
+```
+
+However, the recommended use is to install it as a dev dependency in your project environment. If you are using [uv](https://docs.astral.sh/uv/) for managing your Python projects, you can add it to your `pyproject.toml` like this:
+
+```toml
+[dependency-groups]
+dev = [
+    # ... your dev dependencies
+    "pydolce",
+]
+```
+
+> Don't forget to sync: `uv sync --all-groups`
+
+Then you can use it by running:
+
+```bash
+uv run dolce
 ```
 
 ## Usage
@@ -46,6 +66,12 @@ Summary:
 ✗ Incorrect: 5
 ```
 
+### Quick reference of available rules
+
+```bash
+dolce rules
+```
+
 ## Configure
 
 Right now **dolce** can be configured via `pyproject.toml` file. You can specify which rules to check and which to ignore. By default it will check all rules.
@@ -54,39 +80,13 @@ Right now **dolce** can be configured via `pyproject.toml` file. You can specify
 [tool.dolce]
 target = [
   # Set of rules to check
-  "DOC101",
+  "DCE101",
 ]
 disable = [
   # Set of rules to ignore
-  "DOC101",
+  "DCE102",
 ]
 ```
-
-### Quick reference of available rules
-
-```bash
-dolce rules
-```
-
-- **DOC101:** Function is missing a docstring.
-- **DOC102:** Class is missing a docstring.
-- **DOC103:** Class docstring has invalid syntax.
-- **DOC201:** Duplicate parameters in docstring.
-- **DOC202:** Documented parameter does not exist
-- **DOC203:** Missing parameter in documention
-- **DOC204:** Parameter description is missing
-- **DOC205:** Return missing from docstring
-- **DOC206:** Parameter type missing
-- **DOC206:** Invalid parameter type
-- **DOC204:** Invalid return type
-
-LLM based rules:
-
-- **DOC301:** Docstring description contains spelling errors.
-- **DOC302:** Docstring parameter description contains spelling errors.
-- **DOC303:** Docstring return description contains spelling errors.
-- **DOC401:** Docstring states the function does something that the code does not do.
-- **DOC402:** Docstring omits a critical behavior that the code performs.
 
 ### Use of LLM
 

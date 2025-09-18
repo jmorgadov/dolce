@@ -1,16 +1,16 @@
 from pydolce.parser import CodeSegment, CodeSegmentType
-from pydolce.rules.rules import Rule, RuleResult
+from pydolce.rules.rules import Rule, RuleContext, RuleResult
 
 
 @Rule.register(201, "Parameter in signature is not documented.")
-def missing_param(segment: CodeSegment) -> RuleResult:
+def missing_param(segment: CodeSegment, ctx: RuleContext) -> RuleResult | None:
     if not segment.doc or segment.parsed_doc is None:
-        return RuleResult.good()
+        return None
 
     func_params = list(segment.params.keys()) if segment.params else []
-    if segment.args_name:
+    if not ctx.config.ignore_args and segment.args_name:
         func_params.append(segment.args_name)
-    if segment.kwargs_name:
+    if not ctx.config.ignore_kwargs and segment.kwargs_name:
         func_params.append(segment.kwargs_name)
 
     if not func_params:
@@ -25,9 +25,9 @@ def missing_param(segment: CodeSegment) -> RuleResult:
 
 
 @Rule.register(202, "Missing parameter type in docstring.")
-def missing_param_type(segment: CodeSegment) -> RuleResult:
+def missing_param_type(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
     if not segment.params or segment.parsed_doc is None or not segment.doc:
-        return RuleResult.good()
+        return None
 
     return RuleResult.bad_if_any(
         f"Parameter '{p.arg_name}' is missing a type in the docstring."
@@ -37,9 +37,9 @@ def missing_param_type(segment: CodeSegment) -> RuleResult:
 
 
 @Rule.register(203, "Parameter documented type does not match signature.")
-def wrong_param_type(segment: CodeSegment) -> RuleResult:
+def wrong_param_type(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
     if segment.params is None or not segment.params or segment.parsed_doc is None:
-        return RuleResult.good()
+        return None
 
     errors = []
     for param in segment.parsed_doc.params:
@@ -68,9 +68,11 @@ def wrong_param_type(segment: CodeSegment) -> RuleResult:
 
 
 @Rule.register(204, "Missing parameter description.")
-def missing_param_description(segment: CodeSegment) -> RuleResult:
+def missing_param_description(
+    segment: CodeSegment, _ctx: RuleContext
+) -> RuleResult | None:
     if not segment.doc or segment.parsed_doc is None:
-        return RuleResult.good()
+        return None
 
     return RuleResult.bad_if_any(
         f"Parameter '{param.arg_name}' is missing a description."
@@ -80,14 +82,14 @@ def missing_param_description(segment: CodeSegment) -> RuleResult:
 
 
 @Rule.register(205, "Documented parameter does not exist in signature.")
-def params_does_not_exist(segment: CodeSegment) -> RuleResult:
+def params_does_not_exist(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
     if (
         segment.params is None
         or not segment.params
         or segment.parsed_doc is None
         or not segment.doc
     ):
-        return RuleResult.good()
+        return None
 
     return RuleResult.bad_if_any(
         f"Parameter '{param.arg_name}' documented but not in signature."
@@ -97,9 +99,9 @@ def params_does_not_exist(segment: CodeSegment) -> RuleResult:
 
 
 @Rule.register(206, "Parameter is documented multiple times in the docstring.")
-def duplicate_params(segment: CodeSegment) -> RuleResult:
+def duplicate_params(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
     if segment.parsed_doc is None:
-        return RuleResult.good()
+        return None
 
     errors = []
     checked_params = set()
@@ -117,13 +119,13 @@ def duplicate_params(segment: CodeSegment) -> RuleResult:
 
 
 @Rule.register(221, "Missing return section in docstring.")
-def missing_return(segment: CodeSegment) -> RuleResult:
+def missing_return(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
     if (
         segment.seg_type != CodeSegmentType.Function
         or segment.parsed_doc is None
         or not segment.doc
     ):
-        return RuleResult.good()
+        return None
 
     if segment.returns is not None and segment.returns == "None":
         return RuleResult.good()
@@ -132,15 +134,17 @@ def missing_return(segment: CodeSegment) -> RuleResult:
 
 
 @Rule.register(222, "Missing return description.")
-def missing_return_description(segment: CodeSegment) -> RuleResult:
+def missing_return_description(
+    segment: CodeSegment, _ctx: RuleContext
+) -> RuleResult | None:
     if segment.seg_type != CodeSegmentType.Function:
-        return RuleResult.good()
+        return None
     if (
         segment.parsed_doc is None
         or segment.parsed_doc.returns is None
         or (segment.returns is not None and segment.returns == "None")
     ):
-        return RuleResult.good()
+        return None
 
     ret = segment.parsed_doc.returns
     return RuleResult.from_bool(
@@ -149,16 +153,16 @@ def missing_return_description(segment: CodeSegment) -> RuleResult:
 
 
 @Rule.register(223, "Return documented type does not match signature.")
-def wrong_return_type(segment: CodeSegment) -> RuleResult:
+def wrong_return_type(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
     if segment.seg_type != CodeSegmentType.Function:
-        return RuleResult.good()
+        return None
     if (
         segment.returns is None
         or not segment.returns
         or segment.parsed_doc is None
         or segment.parsed_doc.returns is None
     ):
-        return RuleResult.good()
+        return None
 
     return RuleResult.from_bool(
         segment.returns == segment.parsed_doc.returns.type_name,
