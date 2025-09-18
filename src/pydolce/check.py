@@ -15,12 +15,12 @@ from pydolce.parser import (
     DocStatus,
     code_docs_from_path,
 )
-from pydolce.rules.rules import RULES_FROM_REF, DocRule
+from pydolce.rules.rules import DEFAULT_PREFIX, Rule
 
 
 def ruled_check_prompts(
     function_code: str,
-    rules: list[DocRule],
+    rules: list[str],
 ) -> tuple[str, str]:
     """
     Create system and user prompts for the model to check if docstring follows the defined rules.
@@ -38,9 +38,7 @@ def ruled_check_prompts(
         Tuple of (system_prompt, user_prompt)
     """
 
-    rules_str = "\n".join(
-        f"- {r.ref}: {r.prompt if r.prompt else r.description}" for r in rules
-    )
+    rules_str = "\n".join(rules)
     system_prompt = """You are an expert Python docstring analyzer. Your task is to analyze if a Python function docstring follows a set of defined rules."""
 
     system_prompt += f"""
@@ -125,10 +123,23 @@ def _print_summary(responses: list[CodeSegmentReport]) -> None:
 
 
 def check_description(
-    codeseg: CodeSegment, llm: LLMClient, rules: list[DocRule]
+    codeseg: CodeSegment, llm: LLMClient, rules: list[Rule]
 ) -> CodeSegmentReport | None:
+    assert all(r.prompt is not None for r in rules), "All llm rules must have prompts"
+
+    rule_prompts = [r.prompt(codeseg) for r in rules if r.prompt is not None]
+
+    # Filter aplicable rules
+    filtered_rules = [r for r, rp in zip(rules, rule_prompts, strict=True) if rp[0]]
+
+    if not filtered_rules:
+        return CodeSegmentReport.correct()
+
+    rules_list = [
+        f"- {r.ref}: {p[1]}" for r, p in zip(filtered_rules, rule_prompts, strict=True)
+    ]
     sys_prompt, user_prompt = ruled_check_prompts(
-        function_code=codeseg.code, rules=rules
+        function_code=codeseg.code, rules=rules_list
     )
     response = llm.generate(
         prompt=user_prompt,
@@ -151,16 +162,16 @@ def check_description(
     if json_resp["issues"]:
         issues = []
         for i, issue in enumerate(json_resp["issues"]):
-            ref_search = re.search(r"DOC\d{3}", issue)
+            ref_search = re.search(DEFAULT_PREFIX + r"\d{3}", issue)
             if ref_search is None:
                 # Unknown issue format
                 continue
 
             ref = ref_search[0]
-            if ref not in RULES_FROM_REF:
+            if not Rule.is_ref_registered(ref):
                 # Unknown rule reference
                 continue
-            rule_descr = RULES_FROM_REF[ref].description
+            rule_descr = Rule.all_rules[ref].description
             issue_descr = (
                 json_resp["descr"][i]
                 if "descr" in json_resp and len(json_resp["descr"]) > i
@@ -181,9 +192,10 @@ def check_description(
 
 def check(path: str, config: DolceConfig) -> None:
     checkpath = Path(path)
+    assert config.rule_set is not None
 
     llm = None
-    if config.rule_set.contains_llm_rules():
+    if config.url and config.rule_set.contains_llm_rules():
         llm = LLMClient(LLMConfig.from_dolce_config(config))
         if not llm.test_connection():
             rich.print("[red]✗ Connection failed[/red]")
@@ -191,7 +203,7 @@ def check(path: str, config: DolceConfig) -> None:
 
     reports: list[CodeSegmentReport] = []
 
-    for pair in code_docs_from_path(checkpath):
+    for pair in code_docs_from_path(checkpath, config.exclude):
         loc = f"[blue]{pair.code_path}[/blue]"
         rich.print(f"[  ...  ] [blue]{loc}[/blue]", end="\r")
 

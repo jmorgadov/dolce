@@ -7,7 +7,7 @@ from typing import Any
 
 import toml
 
-from pydolce.rules.rules import DEFAULT_RULESET, RuleSet
+from pydolce.rules.rules import RuleSet
 
 DEFAULT_EXCLUDES = [
     "__init__.py",
@@ -30,7 +30,7 @@ class DolceConfig:
     # General options
     target: list[str] | None = None  # Specific rules to target
     disable: list[str] | None = None  # Specific rules to disable
-    rule_set: RuleSet = DEFAULT_RULESET
+    rule_set: RuleSet | None = None
 
     exclude: list[str] | None = None
 
@@ -76,7 +76,7 @@ class DolceConfig:
                 target=config.get("target", None), disable=config.get("disable", None)
             )
         else:
-            config["rule_set"] = DEFAULT_RULESET
+            config["rule_set"] = RuleSet()
 
         if "exclude" not in config:
             config["exclude"] = DEFAULT_EXCLUDES

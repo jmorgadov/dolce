@@ -6,6 +6,7 @@ from enum import Enum, auto
 from pathlib import Path
 from typing import Generator
 
+import pathspec
 from docstring_parser import Docstring, ParseError, parse
 
 
@@ -24,7 +25,11 @@ class CodeSegment:
     code: str
     doc: str
     parsed_doc: Docstring | None
-    args: dict[str, str] | None = None
+    params: dict[str, str] | None = None
+    args_name: str | None = None
+    args_type: str | None = None
+    kwargs_name: str | None = None
+    kwargs_type: str | None = None
     returns: str | None = None
     seg_type: CodeSegmentType = CodeSegmentType.Function
 
@@ -61,6 +66,15 @@ def _parse_file(filepath: Path) -> Generator[CodeSegment]:
             except ParseError:
                 pass
 
+            params = (
+                {
+                    a.arg: ast.unparse(a.annotation)
+                    for a in node.args.args
+                    if a.annotation is not None
+                }
+                if node.args
+                else None
+            )
             yield CodeSegment(
                 file_path=filepath,
                 code=func_code,
@@ -68,31 +82,42 @@ def _parse_file(filepath: Path) -> Generator[CodeSegment]:
                 lineno=lineno,
                 code_path=f"{codepath}",
                 parsed_doc=parsed_doc,
-                args={
-                    a.arg: ast.unparse(a.annotation)
-                    for a in node.args.args
-                    if a.annotation is not None
-                }
-                if node.args
+                params=params,
+                args_name=str(node.args.vararg.arg) if node.args.vararg else None,
+                args_type=ast.unparse(node.args.vararg.annotation)
+                if node.args.vararg and node.args.vararg.annotation
+                else None,
+                kwargs_name=str(node.args.kwarg.arg) if node.args.kwarg else None,
+                kwargs_type=ast.unparse(node.args.kwarg.annotation)
+                if node.args.kwarg and node.args.kwarg.annotation
                 else None,
                 returns=ast.unparse(node.returns) if node.returns else None,
                 seg_type=CodeSegmentType.Function,
             )
 
 
-def _parse_folder(folderpath: Path) -> Generator[CodeSegment]:
-    for file in folderpath.rglob("*.py"):
-        yield from _parse_file(file)
-
-
-def code_docs_from_path(path: str | Path) -> Generator[CodeSegment]:
+def code_docs_from_path(
+    path: str | Path, excludes: list[str] | None
+) -> Generator[CodeSegment]:
     path = path if isinstance(path, Path) else Path(path)
     if not path.exists():
         raise FileNotFoundError(f"Path {path} does not exist.")
     if not path.is_file() and not path.is_dir():
         raise ValueError(f"Path {path} is neither a file nor a directory.")
 
+    spec = pathspec.PathSpec.from_lines("gitwildmatch", excludes or [])
+
     if path.is_file():
         yield from _parse_file(path)
-    else:
-        yield from _parse_folder(path)
+        return
+
+    curr_path = str(path.resolve())
+    all_python_files = [
+        p
+        for p in Path(path).rglob("*.py")
+        if not spec.match_file(str(p.resolve())[len(curr_path) + 1 :])
+    ]
+
+    # filter out ignored ones
+    for p in all_python_files:
+        yield from _parse_file(p)

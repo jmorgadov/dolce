@@ -1,5 +1,6 @@
 import logging
 
+import pydolce.rules.checkers  # noqa: F401  (checkers are registered on import)
 from pydolce.check import check
 
 __version__ = "0.1.3"

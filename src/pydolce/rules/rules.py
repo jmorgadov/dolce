@@ -1,126 +1,102 @@
-from dataclasses import dataclass
-from typing import Callable
+from __future__ import annotations
 
-from pydolce.parser import CodeSegment, CodeSegmentType
-from pydolce.rules.checkers.duplicate_params import check_duplicate_params
-from pydolce.rules.checkers.param_description import check_params_descr
-from pydolce.rules.checkers.param_exist import check_params_exist
-from pydolce.rules.checkers.param_missing import check_params_missing
-from pydolce.rules.checkers.param_type_missing import check_params_type_missing
-from pydolce.rules.checkers.param_types import check_params_type
-from pydolce.rules.checkers.return_missing import check_return_missing
-from pydolce.rules.checkers.return_type import check_return_type
-from pydolce.rules.checkers.valid_syntax import check_valid_syntax
+from dataclasses import dataclass
+from typing import Callable, ClassVar, Generator, Iterable
+
+from pydolce.parser import CodeSegment
+
+DEFAULT_PREFIX = "DCE"
 
 
 @dataclass
-class DocRule:
-    ref: str
-    description: str
-    prompt: str | None = None
-    check: Callable[[CodeSegment], list[str] | None] | None = None
+class RuleResult:
+    passed: bool
+    issues: list[str]
+
+    @staticmethod
+    def good() -> RuleResult:
+        return RuleResult(passed=True, issues=[])
+
+    @staticmethod
+    def bad(issues: list[str] | None = None) -> RuleResult:
+        return RuleResult(passed=False, issues=issues or [])
+
+    @staticmethod
+    def bad_if_any(issues: list[str] | Iterable | Generator) -> RuleResult:
+        issues = list(issues)
+        if issues:
+            return RuleResult.bad(issues)
+        return RuleResult.good()
+
+    @staticmethod
+    def from_bool(passed: bool, issue: str | None = None) -> RuleResult:
+        if passed:
+            return RuleResult.good()
+        return RuleResult.bad([issue] if issue else [])
+
+
+_GROUPS = {
+    1: "Structural",
+    2: "Signature",
+    3: "Content",
+    4: "Integrity",
+    6: "Semantic",
+}
+
+
+class Rule:
+    all_rules: ClassVar[dict[str, Rule]] = {}
+
+    def __init__(
+        self,
+        code: int,
+        name: str,
+        description: str,
+        prompt: Callable[[CodeSegment], tuple[bool, str]] | None = None,
+        check: Callable[[CodeSegment], RuleResult] | None = None,
+    ):
+        self.name = name
+        self.code = code
+        self.ref = f"{DEFAULT_PREFIX}{code:03d}"
+        self.description = description
+        self.prompt = prompt
+        self.check = check
+        self.group = code // 100
 
     @property
-    def level(self) -> int:
-        return int(self.ref[3])
+    def group_name(self) -> str:
+        return _GROUPS.get(self.group, "Unknown")
 
-    @property
-    def number(self) -> int:
-        return int(self.ref[3:])
+    @classmethod
+    def _register(cls, rule: Rule) -> None:
+        assert rule.ref not in cls.all_rules, f"Rule {rule.ref} already registered"
+        cls.all_rules[rule.ref] = rule
 
-    @property
-    def sub_number(self) -> int:
-        return int(self.ref[4:])
+    @classmethod
+    def register(cls, code: int, description: str) -> Callable:
+        def decorator(func: Callable[[CodeSegment], RuleResult]) -> Callable:
+            rule_name = func.__name__.replace("_", "-")
+            rule = Rule(code, rule_name, description, check=func)
+            cls._register(rule)
+            func.__dict__["rule_ref"] = rule.ref
+            return func
 
+        return decorator
 
-ALL_RULES = [
-    DocRule(
-        ref="DOC101",
-        description="Function is missing a docstring.",
-        check=lambda segment: []
-        if segment.seg_type == CodeSegmentType.Function and not segment.doc.strip()
-        else None,
-    ),
-    DocRule(
-        ref="DOC102",
-        description="Class is missing a docstring.",
-        check=lambda segment: []
-        if segment.seg_type == CodeSegmentType.Class and not segment.doc.strip()
-        else None,
-    ),
-    DocRule(
-        ref="DOC103",
-        description="Class docstring has invalid syntax.",
-        check=check_valid_syntax,
-    ),
-    DocRule(
-        ref="DOC201",
-        description="Duplicate parameters in docstring.",
-        check=check_duplicate_params,
-    ),
-    DocRule(
-        ref="DOC202",
-        description="Documented parameter does not exist",
-        check=check_params_exist,
-    ),
-    DocRule(
-        ref="DOC203",
-        description="Missing parameter in documention",
-        check=check_params_missing,
-    ),
-    DocRule(
-        ref="DOC204",
-        description="Parameter description is missing",
-        check=check_params_descr,
-    ),
-    DocRule(
-        ref="DOC205",
-        description="Return missing from docstring",
-        check=check_return_missing,
-    ),
-    DocRule(
-        ref="DOC206",
-        description="Parameter type missing",
-        check=check_params_type_missing,
-    ),
-    DocRule(
-        ref="DOC206",
-        description="Invalid parameter type",
-        check=check_params_type,
-    ),
-    DocRule(
-        ref="DOC204",
-        description="Invalid return type",
-        check=check_return_type,
-    ),
-    DocRule(
-        ref="DOC301",
-        description="Docstring description contains spelling errors.",
-        prompt="The docstring DESCRIPTION contains TYPOS. Exmaples: 'functon' instead of 'function', 'retrun' instead of 'return'. Report the specific typos. Scopes: [DESCRIPTION]",
-    ),
-    DocRule(
-        ref="DOC302",
-        description="Docstring parameter description contains spelling errors.",
-        prompt="The description of some PARAMETERS contains TYPOS. Exmaples: 'functon' instead of 'function', 'retrun' instead of 'return'. Report the specific typos. Scopes: [PARAM_DESCRIPTION]",
-    ),
-    DocRule(
-        ref="DOC303",
-        description="Docstring return description contains spelling errors.",
-        prompt="The description of the RETURN VALUE contains TYPOS. Exmaples: 'functon' instead of 'function', 'retrun' instead of 'return'. Report the specific typos. Scopes: [RETURN_DESCRIPTION]",
-    ),
-    DocRule(
-        ref="DOC401",
-        description="Docstring states the function does something that the code does not do.",
-        prompt="The docstring summary does not match with the code summary. For example, the docstring says 'This function sends an email', but the code sends an SMS. Scopes: [DOCSTRING, CODE]",
-    ),
-    DocRule(
-        ref="DOC402",
-        description="Docstring omits a critical behavior that the code performs.",
-        prompt="The code performs a CRITICAL behavior X, but the docstring does not mention this behavior. CRITICAL means heavy tasks. Non critical behavior may no be documented. Scopes: [DESCRIPTION, CODE]",
-    ),
-]
+    @classmethod
+    def llm_register(cls, code: int, description: str) -> Callable:
+        def decorator(func: Callable[[CodeSegment], tuple[bool, str]]) -> Callable:
+            rule_name = func.__name__.replace("_", "-")
+            rule = Rule(code, rule_name, description, prompt=func)
+            cls._register(rule)
+            func.__dict__["rule_ref"] = rule.ref
+            return func
 
-RULES_FROM_REF = {r.ref: r for r in ALL_RULES}
+        return decorator
+
+    @classmethod
+    def is_ref_registered(cls, ref: str) -> bool:
+        return ref in cls.all_rules
 
 
 class RuleSet:
@@ -128,17 +104,15 @@ class RuleSet:
         self, target: list[str] | None = None, disable: list[str] | None = None
     ):
         if target is None:
-            target = list(RULES_FROM_REF.keys())
+            target = list(Rule.all_rules.keys())
         if disable is None:
             disable = []
 
         self.rules = [
-            rule for rule in ALL_RULES if rule.ref in target and rule.ref not in disable
+            rule
+            for rule in Rule.all_rules.values()
+            if rule.ref in target and rule.ref not in disable
         ]
-
-        self.by_level: dict = {}
-        for rule in self.rules:
-            self.by_level.setdefault(rule.level, []).append(rule)
 
     def __hash__(self) -> int:
         return hash(tuple(sorted(r.ref for r in self.rules)))
@@ -146,22 +120,19 @@ class RuleSet:
     def contains_llm_rules(self) -> bool:
         return any(r.prompt is not None for r in self.rules)
 
-    def llm_rules(self) -> list[DocRule]:
+    def llm_rules(self) -> list[Rule]:
         return [r for r in self.rules if r.prompt is not None]
 
     def check(self, segment: CodeSegment) -> list[str]:
         issues = []
         for rule in self.rules:
             if rule.check is not None:
-                errors = rule.check(segment)
-                if errors is None:
+                result = rule.check(segment)
+                if result.passed:
                     continue
-                if not errors:
+                if not result.issues:
                     issues.append(f"{rule.ref}: {rule.description}")
                     continue
-                for error in errors:
+                for error in result.issues:
                     issues.append(f"{rule.ref}: {rule.description} ({error})")
         return issues
-
-
-DEFAULT_RULESET = RuleSet()
