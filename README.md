@@ -48,17 +48,17 @@ outputs:
 
 ```text
 [ ERROR ] tests/samples/wrong_descr.py:1 add
-  - DOC401: Docstring states the function does something that the code does not do. (The docstring summary 'Multiply two integers' does not match the code's behavior of adding integers.)
+  - DCE601: Description is not consistent with the function implementation. (The docstring summary 'Multiply two integers' does not match the code's behavior of adding integers.)
 [ ERROR ] tests/samples/behavior.py:4 post_multiplication
-  - DOC401: Docstring states the function does something that the code does not do. (The docstring summary says 'Add two integers' but the code performs multiplication.)
-  - DOC402: Docstring omits a critical behavior that the code performs. (The code makes an HTTP POST request (critical behavior) but the docstring does not mention this.)
+  - DCE601: Description is not consistent with the function implementation. (The docstring summary 'Add two integers' does not match the code's actual behavior of multiplying and making an HTTP POST request.)
+  - DCE602: Critical behavior not documented. (The code performs a critical behavior (HTTP POST request) that is not mentioned in the docstring.)
 [ ERROR ] tests/samples/typos.py:1 add
-  - DOC301: Docstring description contains spelling errors. (Typo in DESCRIPTION: 'intgers' instead of 'integers')
-  - DOC302: Docstring parameter description contains spelling errors. (Typo in PARAM_DESCRIPTION: 'Te' instead of 'The')
+  - DCE301: Docstring description contains spelling errors. (Typo in DESCRIPTION: 'intgers' instead of 'integers')
+  - DCE302: Docstring parameter description contains spelling errors. (Typo in PARAM_DESCRIPTION: 'Te' instead of 'The')
 [ ERROR ] tests/samples/simple.py:1 foo
-  - DOC101: Function is missing a docstring.
+  - DCE102: Function is missing a docstring.
 [ ERROR ] tests/samples/simple.py:5 fibonacci
-  - DOC203: Missing parameter in documention (Parameter 'n' in signature but not documented.)
+  - DCE201: Parameter in signature is not documented. (Parameter 'n' is not documented.)
 [  OK   ] tests/samples/simple.py:17 subtract
 
 Summary:
