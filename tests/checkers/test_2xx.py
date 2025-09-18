@@ -4,7 +4,9 @@ from pydolce.rules.checkers._2xx_style import invalid_docstring_style
 from pydolce.rules.rules import RuleContext
 
 
-def test_invalid_docstring_style(code_segment_from: Callable, ctx: RuleContext) -> None:
+def test_invalid_docstring_style(
+    code_segment_from_func: Callable, ctx: RuleContext
+) -> None:
     def func_with_invalid_docstring_style() -> int:
         """This is a docstring using numpy style.
 
@@ -15,7 +17,7 @@ def test_invalid_docstring_style(code_segment_from: Callable, ctx: RuleContext) 
         """
         return 3
 
-    segment = code_segment_from(func_with_invalid_docstring_style)[0]
+    segment = code_segment_from_func(func_with_invalid_docstring_style)[0]
     ctx.config.update(ensure_style="google")
 
     result = invalid_docstring_style(segment, ctx)

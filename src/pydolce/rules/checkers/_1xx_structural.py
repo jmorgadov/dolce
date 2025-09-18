@@ -1,3 +1,4 @@
+import ast
 from pathlib import Path
 
 import docstring_parser
@@ -12,9 +13,10 @@ def _id(n: int) -> int:
     return _INDEX + n
 
 
-@Rule.register(_id(1), "Docstring has invalid syntax.")
+@Rule.register(_id(1), "Docstring has invalid syntax.", docsig_rule="SIG901")
 def invalid_docstring_syntax(
-    segment: CodeSegment, _ctx: RuleContext
+    segment: CodeSegment,
+    _ctx: RuleContext,
 ) -> RuleResult | None:
     if segment.parsed_doc is None:
         return None
@@ -44,6 +46,7 @@ def missing_module_docstring(
     "Class is missing a docstring.",
     scopes=Scopes.classes(),
     pydocstyle_rule="D101",
+    docsig_rule="SIG102",
 )
 def missing_class_docstring(
     segment: CodeSegment, _ctx: RuleContext
@@ -68,8 +71,11 @@ def missing_method_docstring(
     "Function is missing a docstring.",
     scopes=Scopes.non_method_funcs(),
     pydocstyle_rule="D103",
+    docsig_rule="SIG101",
 )
-def missing_func_docstring(
-    segment: CodeSegment, _ctx: RuleContext
-) -> RuleResult | None:
+def missing_func_docstring(segment: CodeSegment, ctx: RuleContext) -> RuleResult | None:
+    if ctx.config.ignore_private_functions:
+        assert isinstance(segment.code_node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        if segment.code_node.name.startswith("_"):
+            return None
     return RuleResult.check(bool(segment.doc.strip()))

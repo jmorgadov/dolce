@@ -70,7 +70,8 @@ class CodeSegmentVisitor(ast.NodeVisitor):
         )
         return CodeSegment(
             file_path=self.filepath,
-            code=code_str,
+            code_str=code_str,
+            code_node=node,
             doc=func_doc,
             lineno=lineno,
             code_path=f"{codepath}",
@@ -111,8 +112,9 @@ class CodeSegment:
     file_path: Path
     code_path: str
     lineno: int
-    code: str
     doc: str
+    code_str: str
+    code_node: ast.AST | None
     parsed_doc: Docstring | None
     seg_type: CodeSegmentType = CodeSegmentType.Function
 
@@ -168,6 +170,7 @@ class CodeSegment:
 
     @property
     def has_doc(self) -> bool:
+        """Whether the segment has a non-empty docstring."""
         return bool(self.doc.strip())
 
     @property

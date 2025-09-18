@@ -36,9 +36,20 @@ def ctx() -> RuleContext:
 
 
 @pytest.fixture
-def code_segment_from() -> Callable[[Callable], CodeSegment]:
+def code_segment_from_func() -> Callable[[Callable], CodeSegment]:
     def _code_segment_from(func: Callable) -> list[CodeSegment]:
         code_str = inspect.getsource(func)
+        code_str = _unindent_all_possible(code_str)
+        visitor = CodeSegmentVisitor("dummy.py")
+        visitor.visit(ast.parse(code_str))
+        return visitor.segments
+
+    return _code_segment_from
+
+
+@pytest.fixture
+def code_segment_from_str() -> Callable[[str], list[CodeSegment]]:
+    def _code_segment_from(code_str: str) -> list[CodeSegment]:
         code_str = _unindent_all_possible(code_str)
         visitor = CodeSegmentVisitor("dummy.py")
         visitor.visit(ast.parse(code_str))

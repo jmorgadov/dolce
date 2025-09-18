@@ -31,11 +31,11 @@ def ruled_check_prompts(
     This will NOT check for completeness, only for CRITICAL inconsistencies.
 
     Args:
-        function_code: The Python function code to analyze
-        existing_docstring: Current docstring (if any)
+        function_code (str): The Python function code to analyze
+        rules (list[str]): List of rules to check, each as a string
 
     Returns:
-        Tuple of (system_prompt, user_prompt)
+        tuple[str, str]: Tuple of (system_prompt, user_prompt)
     """
 
     rules_str = "\n".join(rules)
@@ -138,7 +138,7 @@ def check_description(
         for rule, prompt in zip(filtered_rules, rule_prompts, strict=True)
     ]
     sys_prompt, user_prompt = ruled_check_prompts(
-        function_code=codeseg.code, rules=rules_list
+        function_code=codeseg.code_str, rules=rules_list
     )
     response = llm.generate(
         prompt=user_prompt,

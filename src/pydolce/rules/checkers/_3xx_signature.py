@@ -1,6 +1,7 @@
+import ast
 from pathlib import Path
 
-from pydolce.parser import CodeSegment, CodeSegmentType, Scopes
+from pydolce.parser import CodeSegment, Scopes
 from pydolce.rules.rules import Rule, RuleContext, RuleResult
 
 _INDEX = int(Path(__file__).stem[1]) * 100
@@ -18,7 +19,10 @@ def _id(n: int) -> int:
 
 
 @Rule.register(
-    _id(1), "Parameter in signature is not documented.", scopes=Scopes.functions()
+    _id(1),
+    "Parameter in signature is not documented.",
+    scopes=Scopes.functions(),
+    docsig_rule="SIG203",
 )
 def missing_param(segment: CodeSegment, ctx: RuleContext) -> RuleResult | None:
     if not segment.doc or segment.parsed_doc is None:
@@ -93,7 +97,12 @@ def wrong_param_type(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | No
     return RuleResult.bad_if_any(errors)
 
 
-@Rule.register(_id(4), "Missing parameter description.", scopes=Scopes.functions())
+@Rule.register(
+    _id(4),
+    "Missing parameter description.",
+    scopes=Scopes.functions(),
+    docsig_rule="SIG301",
+)
 def missing_param_description(
     segment: CodeSegment, _ctx: RuleContext
 ) -> RuleResult | None:
@@ -111,6 +120,7 @@ def missing_param_description(
     _id(5),
     "Documented parameter does not exist in signature.",
     scopes=Scopes.functions(),
+    docsig_rule="SIG202",
 )
 def params_does_not_exist(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
     if (
@@ -132,6 +142,7 @@ def params_does_not_exist(segment: CodeSegment, _ctx: RuleContext) -> RuleResult
     _id(6),
     "Parameter is documented multiple times in the docstring.",
     scopes=Scopes.functions(),
+    docsig_rule="SIG201",
 )
 def duplicate_params(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
     if segment.parsed_doc is None:
@@ -164,6 +175,7 @@ def duplicate_params(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | No
     "Missing return section in docstring.",
     scopes=Scopes.functions(),
     pydoclint_rule="DOC201",
+    docsig_rule="SIG503",
 )
 def missing_return(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
     if segment.parsed_doc is None or not segment.doc or segment.is_generator:
@@ -172,10 +184,34 @@ def missing_return(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None
     if segment.returns is not None and segment.returns == "None":
         return RuleResult.good()
 
+    # Properties do not need return sections
+    assert isinstance(segment.code_node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    if segment.code_node.decorator_list:
+        for decorator in segment.code_node.decorator_list:
+            if isinstance(decorator, ast.Name) and decorator.id == "property":
+                return RuleResult.good()
+            elif isinstance(decorator, ast.Attribute) and decorator.attr in [
+                "setter",
+                "setter",
+                "deleter",
+            ]:
+                return RuleResult.good()
+            elif (
+                isinstance(decorator, ast.Call)
+                and isinstance(decorator.func, ast.Name)
+                and decorator.func.id == "property"
+            ):
+                return RuleResult.good()
+
     return RuleResult.check(segment.parsed_doc.returns is not None)
 
 
-@Rule.register(_id(22), "Missing return description.", scopes=Scopes.functions())
+@Rule.register(
+    _id(22),
+    "Missing return description.",
+    scopes=Scopes.functions(),
+    docsig_rule="SIG506",
+)
 def missing_return_description(
     segment: CodeSegment, _ctx: RuleContext
 ) -> RuleResult | None:
@@ -219,6 +255,7 @@ def wrong_return_type(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | N
     "Unnecessary return section in docstring.",
     scopes=Scopes.functions(),
     pydoclint_rule="DOC202",
+    docsig_rule="SIG502",
 )
 def unnecessary_return(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
     if (
@@ -229,6 +266,44 @@ def unnecessary_return(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | 
         return None
 
     return RuleResult.check(segment.returns != "None")
+
+
+@Rule.register(
+    _id(25),
+    "Return documented on property.",
+    scopes=Scopes.functions(),
+    docsig_rule="SIG505",
+)
+def return_on_property(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
+    if segment.parsed_doc is None or not segment.has_return_doc:
+        return None
+
+    # Check if the function is a property
+    assert isinstance(segment.code_node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    is_property = False
+    if segment.code_node.decorator_list:
+        for decorator in segment.code_node.decorator_list:
+            if isinstance(decorator, ast.Name) and decorator.id == "property":
+                is_property = True
+                break
+            elif isinstance(decorator, ast.Attribute) and decorator.attr in [
+                "setter",
+                "setter",
+                "deleter",
+            ]:
+                is_property = True
+                break
+            elif (
+                isinstance(decorator, ast.Call)
+                and isinstance(decorator.func, ast.Name)
+                and decorator.func.id == "property"
+            ):
+                is_property = True
+                break
+
+    return RuleResult.check(
+        not is_property, "Properties should not have return sections."
+    )
 
 
 # ----------------------------------------------------------------

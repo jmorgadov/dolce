@@ -31,9 +31,10 @@ class DolceConfig:
     target: list[str] | None = None  # Specific rules to target
     disable: list[str] | None = None  # Specific rules to disable
     exclude: list[str] | None = None
-    ignore_args: bool = False
-    ignore_kwargs: bool = False
+    ignore_args: bool = True
+    ignore_kwargs: bool = True
     ensure_style: str | None = None  # e.g., "google", "numpy", "sphinx"
+    ignore_private_functions: bool = True
 
     rule_set: RuleSet | None = None
 
