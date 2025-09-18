@@ -204,6 +204,7 @@ def unnecessary_return(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | 
         not segment.is_func
         or segment.doc_return_type is None
         or not segment.has_return_doc
+        or segment.is_generator
     ):
         return None
 
@@ -223,6 +224,7 @@ def missing_yield(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None:
         not segment.is_func
         or segment.real_return_type is None
         or segment.parsed_doc is None
+        or not segment.is_generator
     ):
         return None
 

@@ -103,6 +103,55 @@ class CodeSegment:
             and self.parsed_doc.returns.is_generator
         )
 
+    @staticmethod
+    def from_str_code(
+        code: str, filepath: str | Path | None = None
+    ) -> Generator[CodeSegment]:
+        tree = ast.parse(code)
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                func_code = ast.get_source_segment(code, node)
+                assert func_code is not None
+                func_doc = ast.get_docstring(node) or ""
+                lineno = getattr(node, "lineno", 1)
+                func_name = node.name
+                filepath = Path(filepath) if filepath is not None else Path("<unknown>")
+                codepath = f"{filepath}:{lineno} {func_name}"
+                parsed_doc = None
+                try:
+                    parsed_doc = parse(func_doc)
+                except ParseError:
+                    pass
+
+                params = (
+                    {
+                        a.arg: ast.unparse(a.annotation)
+                        for a in node.args.args
+                        if a.annotation is not None
+                    }
+                    if node.args
+                    else None
+                )
+                yield CodeSegment(
+                    file_path=filepath,
+                    code=func_code,
+                    doc=func_doc,
+                    lineno=lineno,
+                    code_path=f"{codepath}",
+                    parsed_doc=parsed_doc,
+                    params=params,
+                    args_name=str(node.args.vararg.arg) if node.args.vararg else None,
+                    args_type=ast.unparse(node.args.vararg.annotation)
+                    if node.args.vararg and node.args.vararg.annotation
+                    else None,
+                    kwargs_name=str(node.args.kwarg.arg) if node.args.kwarg else None,
+                    kwargs_type=ast.unparse(node.args.kwarg.annotation)
+                    if node.args.kwarg and node.args.kwarg.annotation
+                    else None,
+                    returns=ast.unparse(node.returns) if node.returns else None,
+                    seg_type=CodeSegmentType.Function,
+                )
+
 
 class DocStatus(Enum):
     CORRECT = "CORRECT"
@@ -121,49 +170,7 @@ class CodeSegmentReport:
 
 def _parse_file(filepath: Path) -> Generator[CodeSegment]:
     code = filepath.read_text()
-    tree = ast.parse(code)
-    for node in ast.walk(tree):
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            func_code = ast.get_source_segment(code, node)
-            assert func_code is not None
-            func_doc = ast.get_docstring(node) or ""
-            lineno = getattr(node, "lineno", 1)
-            func_name = node.name
-            codepath = f"{filepath}:{lineno} {func_name}"
-            parsed_doc = None
-            try:
-                parsed_doc = parse(func_doc)
-            except ParseError:
-                pass
-
-            params = (
-                {
-                    a.arg: ast.unparse(a.annotation)
-                    for a in node.args.args
-                    if a.annotation is not None
-                }
-                if node.args
-                else None
-            )
-            yield CodeSegment(
-                file_path=filepath,
-                code=func_code,
-                doc=func_doc,
-                lineno=lineno,
-                code_path=f"{codepath}",
-                parsed_doc=parsed_doc,
-                params=params,
-                args_name=str(node.args.vararg.arg) if node.args.vararg else None,
-                args_type=ast.unparse(node.args.vararg.annotation)
-                if node.args.vararg and node.args.vararg.annotation
-                else None,
-                kwargs_name=str(node.args.kwarg.arg) if node.args.kwarg else None,
-                kwargs_type=ast.unparse(node.args.kwarg.annotation)
-                if node.args.kwarg and node.args.kwarg.annotation
-                else None,
-                returns=ast.unparse(node.returns) if node.returns else None,
-                seg_type=CodeSegmentType.Function,
-            )
+    yield from CodeSegment.from_str_code(code, filepath=filepath)
 
 
 def code_docs_from_path(
