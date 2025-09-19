@@ -39,9 +39,9 @@ class DolceConfig:
     rule_set: RuleSet | None = None
 
     # LLM options
-    provider: str = "ollama"
-    url: str = "http://localhost:11434"
-    model: str = "qwen3:8b"
+    provider: str = ""  # "ollama"
+    url: str = ""  # "http://localhost:11434"
+    model: str = ""  # "qwen3:8b"
     api_key: str | None = None
     temperature: float = 0.0
     max_tokens: int | None = 2000
@@ -50,8 +50,12 @@ class DolceConfig:
     retry_delay: float = 1.0
 
     def describe(self) -> str:
-        """Return a string description of the configuration."""
+        """
+        Generates a string description of the LLM provider configuration
 
+        Returns:
+            str: A formatted string containing provider details, URL, model, and API key status
+        """
         desc = f"Provider: {self.provider}\n"
         desc += f"URL: {self.url}\n"
         desc += f"Model: {self.model}\n"
@@ -63,7 +67,12 @@ class DolceConfig:
 
     @staticmethod
     def from_pyproject() -> DolceConfig:
-        """Load configuration from pyproject.toml if available."""
+        """
+        Parses the pyproject.toml file and returns a DolceConfig instance with parsed settings.
+
+        Returns:
+            DolceConfig: A DolceConfig object initialized with configuration parameters extracted from the pyproject.toml file, including rule sets, excludes, and API key settings.
+        """
         pyproject_path = Path("pyproject.toml")
         if not pyproject_path.exists():
             return DolceConfig()
@@ -92,7 +101,7 @@ class DolceConfig:
         return DolceConfig(**config)
 
     def update(self, **kwargs: Any) -> None:
-        """Update configuration attributes."""
+        """Updates the object's attributes with provided keyword arguments, only setting non-None values for existing attributes."""
         for key, value in kwargs.items():
             if value is not None and hasattr(self, key):
                 setattr(self, key, value)

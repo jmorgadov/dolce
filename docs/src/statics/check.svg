@@ -1,0 +1,107 @@
+<svg height="480.8" width="659.2" xmlns="http://www.w3.org/2000/svg">
+<g transform="translate(32,16)">
+<filter id="shadow">
+<feGaussianBlur stdDeviation="12"/>
+</filter>
+<rect fill="#000000c0" filter="url(#shadow)" height="416.8" rx="10" ry="10" width="595.2" x="4" y="12"/>
+<rect fill="#282c34" height="416.8" rx="10" ry="10" width="595.2"/>
+<clipPath id="header">
+<rect height="28" width="595.2"/>
+</clipPath>
+<rect clip-path="url(#header)" fill="#383837" height="56" rx="10" ry="10" width="595.2"/>
+<line stroke="#000000c0" stroke-width="0.5" x1="0" x2="595.2" y1="28" y2="28"/><text dominant-baseline="central" fill="#b3b3b3" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" x="297.6" y="14">uv run dolce check tests/samples</text>
+<g>
+<circle cx="14" cy="14" fill="#ff5f56" r="6" stroke="#ff5f56" stroke-width="0.5"/>
+<circle cx="34" cy="14" fill="#ffbd2e" r="6" stroke="#ffbd2e" stroke-width="0.5"/>
+<circle cx="54" cy="14" fill="#28c941" r="6" stroke="#28c941" stroke-width="0.5"/>
+</g>
+<svg class="terminal" font-family="JetBrains Mono, Fira Code, Source Code Pro, Cascadia Code, Consolas, Menlo, Monaco, DejaVu Sans Mono, monospace, Symbols Nerd Font Mono" font-size="12" height="388.8" width="595.2" y="28">
+<svg fill="#dcdfe4" x="9.6" y="7.2">
+<g>
+<svg height="374.4" viewBox="0 0 48 31.2" width="576">
+<g stroke-width="0.025"/>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="0">
+<text xml:space="preserve" y="0.96em"><tspan fill="#c678dd">Dolce </tspan><tspan fill="#c678dd">- </tspan><tspan fill="#c678dd" font-weight="bold">0.1</tspan><tspan fill="#c678dd">.</tspan><tspan fill="#c678dd" font-weight="bold">4</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="28.8">
+<text xml:space="preserve" y="0.96em"><tspan fill="#e06c75" font-weight="bold">[</tspan><tspan fill="#e06c75" x="1.2em">ERROR </tspan><tspan fill="#e06c75" font-weight="bold">]</tspan><tspan fill="#61afef" x="6em">tests/samples/wrong_descr.py:</tspan><tspan fill="#61afef" font-weight="bold">1</tspan><tspan fill="#61afef" x="24.6em">add</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="43.2">
+<text xml:space="preserve" y="0.96em"><tspan fill="#e06c75" x="1.2em">- </tspan><tspan fill="#e06c75">DCE601: </tspan><tspan fill="#e06c75">Description </tspan><tspan fill="#e06c75">is </tspan><tspan fill="#e06c75">not </tspan><tspan fill="#e06c75">consistent </tspan><tspan fill="#e06c75">with </tspan><tspan fill="#e06c75">the </tspan><tspan fill="#e06c75">function </tspan><tspan fill="#e06c75">implementation. </tspan><tspan fill="#e06c75" font-weight="bold">(</tspan><tspan fill="#e06c75">The</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="57.6">
+<text xml:space="preserve" y="0.96em"><tspan fill="#e06c75">docstring </tspan><tspan fill="#e06c75">summary </tspan><tspan fill="#e06c75">'Multiply </tspan><tspan fill="#e06c75">two </tspan><tspan fill="#e06c75">integers' </tspan><tspan fill="#e06c75">does </tspan><tspan fill="#e06c75">not </tspan><tspan fill="#e06c75">match </tspan><tspan fill="#e06c75">the </tspan><tspan fill="#e06c75">code's </tspan><tspan fill="#e06c75">behavior </tspan><tspan fill="#e06c75">of </tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="72">
+<text xml:space="preserve" y="0.96em"><tspan fill="#e06c75">adding </tspan><tspan fill="#e06c75">integers.</tspan><tspan fill="#e06c75" font-weight="bold">)</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="86.4">
+<text xml:space="preserve" y="0.96em"><tspan fill="#e06c75" font-weight="bold">[</tspan><tspan fill="#e06c75" x="1.2em">ERROR </tspan><tspan fill="#e06c75" font-weight="bold">]</tspan><tspan fill="#61afef" x="6em">tests/samples/behavior.py:</tspan><tspan fill="#61afef" font-weight="bold">4</tspan><tspan fill="#61afef" x="22.8em">post_multiplication</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="100.8">
+<text xml:space="preserve" y="0.96em"><tspan fill="#e06c75" x="1.2em">- </tspan><tspan fill="#e06c75">DCE601: </tspan><tspan fill="#e06c75">Description </tspan><tspan fill="#e06c75">is </tspan><tspan fill="#e06c75">not </tspan><tspan fill="#e06c75">consistent </tspan><tspan fill="#e06c75">with </tspan><tspan fill="#e06c75">the </tspan><tspan fill="#e06c75">function </tspan><tspan fill="#e06c75">implementation. </tspan><tspan fill="#e06c75" font-weight="bold">(</tspan><tspan fill="#e06c75">The</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="115.2">
+<text xml:space="preserve" y="0.96em"><tspan fill="#e06c75">docstring </tspan><tspan fill="#e06c75">summary </tspan><tspan fill="#e06c75">'Add </tspan><tspan fill="#e06c75">two </tspan><tspan fill="#e06c75">integers' </tspan><tspan fill="#e06c75">does </tspan><tspan fill="#e06c75">not </tspan><tspan fill="#e06c75">match </tspan><tspan fill="#e06c75">the </tspan><tspan fill="#e06c75">code's </tspan><tspan fill="#e06c75">actual </tspan><tspan fill="#e06c75">behavior </tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="129.6">
+<text xml:space="preserve" y="0.96em"><tspan fill="#e06c75">which </tspan><tspan fill="#e06c75">performs </tspan><tspan fill="#e06c75">multiplication </tspan><tspan fill="#e06c75">and </tspan><tspan fill="#e06c75">an </tspan><tspan fill="#e06c75">HTTP </tspan><tspan fill="#e06c75">POST </tspan><tspan fill="#e06c75">request.</tspan><tspan fill="#e06c75" font-weight="bold">)</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="144">
+<text xml:space="preserve" y="0.96em"><tspan fill="#e06c75" x="1.2em">- </tspan><tspan fill="#e06c75">DCE602: </tspan><tspan fill="#e06c75">Critical </tspan><tspan fill="#e06c75">behavior </tspan><tspan fill="#e06c75">not </tspan><tspan fill="#e06c75">documented. </tspan><tspan fill="#e06c75" font-weight="bold">(</tspan><tspan fill="#e06c75">The </tspan><tspan fill="#e06c75">code </tspan><tspan fill="#e06c75">performs </tspan><tspan fill="#e06c75">a </tspan><tspan fill="#e06c75">critical </tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="158.4">
+<text xml:space="preserve" y="0.96em"><tspan fill="#e06c75">behavior </tspan><tspan fill="#e06c75" font-weight="bold">(</tspan><tspan fill="#e06c75">HTTP </tspan><tspan fill="#e06c75">POST </tspan><tspan fill="#e06c75">request</tspan><tspan fill="#e06c75" font-weight="bold">)</tspan><tspan fill="#e06c75" x="17.4em">but </tspan><tspan fill="#e06c75">the </tspan><tspan fill="#e06c75">docstring </tspan><tspan fill="#e06c75">does </tspan><tspan fill="#e06c75">not </tspan><tspan fill="#e06c75">mention </tspan><tspan fill="#e06c75">this </tspan><tspan fill="#e06c75">network </tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="172.8">
+<text xml:space="preserve" y="0.96em"><tspan fill="#e06c75">operation.</tspan><tspan fill="#e06c75" font-weight="bold">)</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="187.2">
+<text xml:space="preserve" y="0.96em"><tspan fill="#e06c75" font-weight="bold">[</tspan><tspan fill="#e06c75" x="1.2em">ERROR </tspan><tspan fill="#e06c75" font-weight="bold">]</tspan><tspan fill="#61afef" x="6em">tests/samples/undocumented.py:</tspan><tspan fill="#61afef" font-weight="bold">1</tspan><tspan fill="#61afef" x="25.2em">fibonacci</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="201.6">
+<text xml:space="preserve" y="0.96em"><tspan fill="#e06c75" x="1.2em">- </tspan><tspan fill="#e06c75">DCE105: </tspan><tspan fill="#e06c75">Function </tspan><tspan fill="#e06c75">is </tspan><tspan fill="#e06c75">missing </tspan><tspan fill="#e06c75">a </tspan><tspan fill="#e06c75">docstring.</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="216">
+<text xml:space="preserve" y="0.96em"><tspan fill="#e06c75" font-weight="bold">[</tspan><tspan fill="#e06c75" x="1.2em">ERROR </tspan><tspan fill="#e06c75" font-weight="bold">]</tspan><tspan fill="#61afef" x="6em">tests/samples/typos.py:</tspan><tspan fill="#61afef" font-weight="bold">1</tspan><tspan fill="#61afef" x="21em">add</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="230.4">
+<text xml:space="preserve" y="0.96em"><tspan fill="#e06c75" x="1.2em">- </tspan><tspan fill="#e06c75">DCE401: </tspan><tspan fill="#e06c75">Docstring </tspan><tspan fill="#e06c75">description </tspan><tspan fill="#e06c75">contains </tspan><tspan fill="#e06c75">spelling </tspan><tspan fill="#e06c75">errors. </tspan><tspan fill="#e06c75" font-weight="bold">(</tspan><tspan fill="#e06c75">The </tspan><tspan fill="#e06c75">docstring </tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="244.8">
+<text xml:space="preserve" y="0.96em"><tspan fill="#e06c75">DESCRIPTION </tspan><tspan fill="#e06c75">contains </tspan><tspan fill="#e06c75">typo: </tspan><tspan fill="#e06c75">'intgers' </tspan><tspan fill="#e06c75">instead </tspan><tspan fill="#e06c75">of </tspan><tspan fill="#e06c75">'integers'.</tspan><tspan fill="#e06c75" font-weight="bold">)</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="259.2">
+<text xml:space="preserve" y="0.96em"><tspan fill="#e06c75" x="1.2em">- </tspan><tspan fill="#e06c75">DCE402: </tspan><tspan fill="#e06c75">Docstring </tspan><tspan fill="#e06c75">parameter </tspan><tspan fill="#e06c75">description </tspan><tspan fill="#e06c75">contains </tspan><tspan fill="#e06c75">spelling </tspan><tspan fill="#e06c75">errors. </tspan><tspan fill="#e06c75" font-weight="bold">(</tspan><tspan fill="#e06c75">The </tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="273.6">
+<text xml:space="preserve" y="0.96em"><tspan fill="#e06c75">description </tspan><tspan fill="#e06c75">of </tspan><tspan fill="#e06c75">parameter </tspan><tspan fill="#e06c75">'a' </tspan><tspan fill="#e06c75">contains </tspan><tspan fill="#e06c75">typo: </tspan><tspan fill="#e06c75">'Te' </tspan><tspan fill="#e06c75">instead </tspan><tspan fill="#e06c75">of </tspan><tspan fill="#e06c75">'The'.</tspan><tspan fill="#e06c75" font-weight="bold">)</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="288">
+<text xml:space="preserve" y="0.96em"><tspan fill="#98c379" font-weight="bold">[</tspan><tspan fill="#98c379" x="1.8em">OK </tspan><tspan fill="#98c379" font-weight="bold" x="4.8em">]</tspan><tspan fill="#61afef" x="6em">tests/samples/simple.py:</tspan><tspan fill="#61afef" font-weight="bold">1</tspan><tspan fill="#61afef" x="21.6em">subtract</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="316.8">
+<text xml:space="preserve" y="0.96em"><tspan fill="#dcdfe4" font-weight="bold">Summary:</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="331.2">
+<text xml:space="preserve" y="0.96em"><tspan fill="#98c379">✓ </tspan><tspan fill="#98c379">Correct: </tspan><tspan fill="#98c379" font-weight="bold">1</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="345.6">
+<text xml:space="preserve" y="0.96em"><tspan fill="#e06c75">✗ </tspan><tspan fill="#e06c75">Incorrect: </tspan><tspan fill="#e06c75" font-weight="bold">4</tspan></text>
+</svg>
+</g>
+</svg>
+</svg>
+<rect fill="none" height="416.8" rx="10" ry="10" stroke="#000000" stroke-width="0.5" width="595.2"/>
+<rect fill="none" height="414.8" rx="9" ry="9" stroke="#f0f0f080" stroke-width="0.5" width="593.2" x="1" y="1"/>
+</g>
+<style>
+@font-face {
+	font-family: JetBrains Mono;
+	font-weight: 100 800;
+	font-style: normal;
+	src: url(https://raw.githubusercontent.com/pamburus/fonts/refs/heads/main/JetBrainsMono/fonts/variable/JetBrainsMono%5Bwght%5D.woff2) format('woff2');
+}
+</style>
+</svg>

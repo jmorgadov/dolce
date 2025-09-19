@@ -185,23 +185,8 @@ def missing_return(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | None
         return RuleResult.good()
 
     # Properties do not need return sections
-    assert isinstance(segment.code_node, (ast.FunctionDef, ast.AsyncFunctionDef))
-    if segment.code_node.decorator_list:
-        for decorator in segment.code_node.decorator_list:
-            if isinstance(decorator, ast.Name) and decorator.id == "property":
-                return RuleResult.good()
-            elif isinstance(decorator, ast.Attribute) and decorator.attr in [
-                "setter",
-                "setter",
-                "deleter",
-            ]:
-                return RuleResult.good()
-            elif (
-                isinstance(decorator, ast.Call)
-                and isinstance(decorator.func, ast.Name)
-                and decorator.func.id == "property"
-            ):
-                return RuleResult.good()
+    if segment.is_property():
+        return RuleResult.good()
 
     return RuleResult.check(segment.parsed_doc.returns is not None)
 
@@ -278,31 +263,8 @@ def return_on_property(segment: CodeSegment, _ctx: RuleContext) -> RuleResult | 
     if segment.parsed_doc is None or not segment.has_return_doc:
         return None
 
-    # Check if the function is a property
-    assert isinstance(segment.code_node, (ast.FunctionDef, ast.AsyncFunctionDef))
-    is_property = False
-    if segment.code_node.decorator_list:
-        for decorator in segment.code_node.decorator_list:
-            if isinstance(decorator, ast.Name) and decorator.id == "property":
-                is_property = True
-                break
-            elif isinstance(decorator, ast.Attribute) and decorator.attr in [
-                "setter",
-                "setter",
-                "deleter",
-            ]:
-                is_property = True
-                break
-            elif (
-                isinstance(decorator, ast.Call)
-                and isinstance(decorator.func, ast.Name)
-                and decorator.func.id == "property"
-            ):
-                is_property = True
-                break
-
     return RuleResult.check(
-        not is_property, "Properties should not have return sections."
+        not segment.is_property(), "Properties should not have return sections."
     )
 
 

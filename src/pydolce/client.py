@@ -67,6 +67,12 @@ class LLMClient:
         self.provider = self._detect_provider()
         self.headers = self._build_headers()
 
+    @staticmethod
+    def from_dolce_config(config: DolceConfig) -> LLMClient:
+        """Create LLMClient from DolceConfig"""
+        llm_config = LLMConfig.from_dolce_config(config)
+        return LLMClient(llm_config)
+
     def _detect_provider(self) -> ProviderType:
         """Auto-detect provider based on URL if not specified"""
         if self.config.provider:

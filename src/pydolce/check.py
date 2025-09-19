@@ -7,7 +7,7 @@ from typing import Counter
 
 import rich
 
-from pydolce.client import LLMClient, LLMConfig
+from pydolce.client import LLMClient
 from pydolce.config import DolceConfig
 from pydolce.parser import (
     CodeSegment,
@@ -16,6 +16,7 @@ from pydolce.parser import (
     code_docs_from_path,
 )
 from pydolce.rules.rules import DEFAULT_PREFIX, Rule, RuleContext
+from pydolce.utils import extract_json_object
 
 
 def ruled_check_prompts(
@@ -80,39 +81,6 @@ Check this code:
     return system_prompt, user_prompt
 
 
-def _extract_json_object(text: str) -> str | None:
-    start = text.find("{")
-    if start == -1:
-        return None
-
-    brace_count = 0
-    in_string = False
-    escape_next = False
-
-    for i, char in enumerate(text[start:], start):
-        if escape_next:
-            escape_next = False
-            continue
-
-        if char == "\\":
-            escape_next = True
-            continue
-
-        if char == '"' and not escape_next:
-            in_string = not in_string
-            continue
-
-        if not in_string:
-            if char == "{":
-                brace_count += 1
-            elif char == "}":
-                brace_count -= 1
-                if brace_count == 0:
-                    return text[start : i + 1]
-
-    return None
-
-
 def _print_summary(responses: list[CodeSegmentReport]) -> None:
     statuses_count = Counter(resp.status for resp in responses)
     rich.print("\n[bold]Summary:[/bold]")
@@ -127,16 +95,20 @@ def check_description(
 ) -> CodeSegmentReport | None:
     assert all(r.prompter is not None for r in rules), "All llm rules must have prompts"
 
-    rule_prompts = [r.prompter(codeseg, ctx) for r in rules if r.prompter is not None]
-    filtered_rules = [r for r, rp in zip(rules, rule_prompts, strict=True) if rp]
+    # rule_prompts = [r.prompter(codeseg, ctx) for r in rules if r.prompter is not None]
+    # filtered_rules = [r for r, rp in zip(rules, rule_prompts, strict=True) if rp]
+    filtered_rules = {
+        r: r.prompter(codeseg, ctx) for r in rules if r.prompter is not None
+    }
+
+    for key in list(filtered_rules.keys()):
+        if not filtered_rules[key]:
+            del filtered_rules[key]
 
     if not filtered_rules:
         return CodeSegmentReport.correct()
 
-    rules_list = [
-        f"- {rule.ref}: {prompt}"
-        for rule, prompt in zip(filtered_rules, rule_prompts, strict=True)
-    ]
+    rules_list = [f"- {rule.ref}: {prompt}" for rule, prompt in filtered_rules.items()]
     sys_prompt, user_prompt = ruled_check_prompts(
         function_code=codeseg.code_str, rules=rules_list
     )
@@ -145,7 +117,7 @@ def check_description(
         system=sys_prompt,
     )
 
-    json_resp_str = _extract_json_object(response)
+    json_resp_str = extract_json_object(response)
 
     if json_resp_str is None:
         rich.print(
@@ -195,7 +167,7 @@ def check(path: str, config: DolceConfig) -> None:
 
     llm = None
     if config.url and config.rule_set.contains_llm_rules():
-        llm = LLMClient(LLMConfig.from_dolce_config(config))
+        llm = LLMClient.from_dolce_config(config)
         if not llm.test_connection():
             rich.print("[red]✗ Connection failed[/red]")
             return

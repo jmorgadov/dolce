@@ -71,9 +71,13 @@ class CodeSegmentVisitor(ast.NodeVisitor):
         return CodeSegment(
             file_path=self.filepath,
             code_str=code_str,
+            col_offset=node.col_offset,
             code_node=node,
             doc=func_doc,
             lineno=lineno,
+            endlineno=node.end_lineno
+            if node.end_lineno
+            else lineno + len(code_str.splitlines()) - 1,
             code_path=f"{codepath}",
             parsed_doc=parsed_doc,
             params=params,
@@ -111,7 +115,9 @@ class CodeSegment:
 
     file_path: Path
     code_path: str
+    col_offset: int
     lineno: int
+    endlineno: int
     doc: str
     code_str: str
     code_node: ast.AST | None
@@ -157,6 +163,30 @@ class CodeSegment:
             if start > 0 and end > start:
                 return self.returns[start:end].strip()
         return None
+
+    def is_property(self) -> bool:
+        if not isinstance(self.code_node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            return False
+        is_property = False
+        for decorator in self.code_node.decorator_list:
+            if isinstance(decorator, ast.Name) and decorator.id == "property":
+                is_property = True
+                break
+            elif isinstance(decorator, ast.Attribute) and decorator.attr in [
+                "setter",
+                "setter",
+                "deleter",
+            ]:
+                is_property = True
+                break
+            elif (
+                isinstance(decorator, ast.Call)
+                and isinstance(decorator.func, ast.Name)
+                and decorator.func.id == "property"
+            ):
+                is_property = True
+                break
+        return is_property
 
     @property
     def real_return_type(self) -> str | None:

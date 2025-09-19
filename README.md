@@ -4,7 +4,34 @@
 
 **Dolce** is a tool designed to help you maintain high-quality docstrings/documentation in your Python code. In addition, it leverages Large Language Models (LLMs) to ensure that your docstrings are semantically consistent with your code.
 
-## Installation
+## 🚀 Quick showcase
+
+Check docstrings issues in your codebase (even semantic issues with the help of LLMs):
+<img src="docs/src/statics/check.svg"/>
+Suggest missing docstrings (powered by LLMs):
+<img src="docs/src/statics/sugg.svg"/>
+
+## ✨ Features
+
+- **Comprensive Rule Set**: Comes with a variety of built-in rules to check for common docstring issues, including:
+  Static rules:
+  - Missing docstrings
+  - Incomplete parameter documentation
+  - Signature mismatches
+  .. etc
+
+  and LLM-powered rules:
+  - Consistency between code and docstring
+  - Detection of undocumented critical behaviors
+  ... etc
+
+- **Generation docstrings**: Generate missing docstrings across your codebase (with the help of LLMs) by running a single command.
+
+- **Customizable**: Easily configure which rules to apply, LLMs config (model, provider, url, etc.), and other settings via a `pyproject.toml` file.
+
+... more features coming soon!
+
+## 📦 Installation
 
 You can install **dolce** globally via pip:
 
@@ -30,40 +57,18 @@ Then you can use it by running:
 uv run dolce
 ```
 
-## Usage
+## 💻 Usage
+
+### Check docstrings
 
 ```bash
-dolce check # Check docstrings in all python files in the current directory and subdirectories
-dolce check src # Check in specific directory
-dolce check src/myproject/main.py # Check in specific file
+dolce check [PATH] # If no PATH is provided it will check the current directory
 ```
 
-### Example
+### Generate missing docstrings
 
 ```bash
-dolce check tests/samples
-```
-
-outputs:
-
-```text
-[ ERROR ] tests/samples/wrong_descr.py:1 add
-  - DCE601: Description is not consistent with the function implementation. (The docstring summary 'Multiply two integers' does not match the code's behavior of adding integers.)
-[ ERROR ] tests/samples/behavior.py:4 post_multiplication
-  - DCE601: Description is not consistent with the function implementation. (The docstring summary 'Add two integers' does not match the code's actual behavior of multiplying and making an HTTP POST request.)
-  - DCE602: Critical behavior not documented. (The code performs a critical behavior (HTTP POST request) that is not mentioned in the docstring.)
-[ ERROR ] tests/samples/typos.py:1 add
-  - DCE301: Docstring description contains spelling errors. (Typo in DESCRIPTION: 'intgers' instead of 'integers')
-  - DCE302: Docstring parameter description contains spelling errors. (Typo in PARAM_DESCRIPTION: 'Te' instead of 'The')
-[ ERROR ] tests/samples/simple.py:1 foo
-  - DCE102: Function is missing a docstring.
-[ ERROR ] tests/samples/simple.py:5 fibonacci
-  - DCE201: Parameter in signature is not documented. (Parameter 'n' is not documented.)
-[  OK   ] tests/samples/simple.py:17 subtract
-
-Summary:
-✓ Correct: 1
-✗ Incorrect: 5
+dolce suggest [PATH] # If no PATH is provided it will run in the current directory
 ```
 
 ### Quick reference of available rules
@@ -72,9 +77,9 @@ Summary:
 dolce rules
 ```
 
-## Configure
+## ⚙️ Configure
 
-Right now **dolce** can be configured via `pyproject.toml` file. You can specify which rules to check and which to ignore. By default it will check all rules.
+**Dolce** can be configured via `pyproject.toml` file. You can specify which rules to check and which to ignore. By default it will check all rules.
 
 ```toml
 [tool.dolce]
@@ -90,17 +95,20 @@ disable = [
 
 ### Use of LLM
 
-By default **dolce** will try to run locally `qwen3:8b` model via `ollama` provider. You can visit the [Ollama](https://ollama.com/) site for installation instructions.
-
-`qwen3:8b` has relatively good performance while fitting in an RTX 4060 GPU (8GB VRAM). However, if you want to use a different model or provider you can configure the default options in the `pyproject.toml` of your project like this:
+By default **dolce** does not make use of LLM features (like smart check rules or doccstring suggestions). To enable them you need to configure the LLM options in the `pyproject.toml` file like this:
 
 ```toml
 [tool.dolce]
 url = "http://localhost:11434"
-model = "codestral"
+model = "qwen3:8b"
 provider = "ollama"
-api_key = "YOUR_API_KEY_ENVIROMENT_VAR"
+api_key = "YOUR_API_KEY_ENVIROMENT_VAR" # Optional, needed for non local providers
 ```
+
+> [!INFO]
+> `qwen3:8b` has relatively good performance while fitting in an RTX 4060 GPU (8GB VRAM)
+
+You can visit the [Ollama](https://ollama.com/) to check how to install and run models locally.
 
 ## To be implemented
 
@@ -111,7 +119,7 @@ api_key = "YOUR_API_KEY_ENVIROMENT_VAR"
 
 ---
 
-## 📦 For Developers
+## 👩‍💻 For Developers
 
 Make sure you have the following tools installed before working with the project:
 

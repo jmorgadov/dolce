@@ -10,12 +10,7 @@ from pydolce.rules.rules import Rule
 app = typer.Typer()
 
 
-@app.command()
-def gen() -> None:
-    rich.print("[blue]Coming soon...[/blue]")
-
-
-@app.command()
+@app.command(help="Check docstrings in the specified Python file or directory")
 def check(
     path: Annotated[
         str,
@@ -28,10 +23,7 @@ def check(
     ] = None,
     model: Annotated[
         str | None,
-        typer.Option(
-            "--model",
-            help="Model name to use (default: codestral for Ollama)",
-        ),
+        typer.Option("--model", help="Model name to use"),
     ] = None,
     no_llm: Annotated[
         bool | None,
@@ -53,7 +45,37 @@ def check(
     )
 
 
-@app.command()
+@app.command(
+    help="Suggest docstrings for functions/methods without docstrings",
+)
+def suggest(
+    path: Annotated[
+        str,
+        typer.Argument(
+            help="Path to the Python file or directory to check",
+        ),
+    ] = ".",
+) -> None:
+    _config = DolceConfig.from_pyproject()
+
+    if not _config.url:
+        rich.print(
+            "[red]✗ LLM not configured. Please set it up in pyproject.toml like:\n[/red]"
+        )
+        rich.print(
+            """\\[tool.dolce]
+url = "http://localhost:11434"
+model = "qwen3:8b"
+provider = "ollama"
+"""
+        )
+        return
+    pydolce.suggest(path, _config)
+
+
+@app.command(
+    help="List all available rules with their references and descriptions",
+)
 def rules() -> None:
     last_group = 0
     for rule in Rule.all_rules.values():
@@ -65,7 +87,9 @@ def rules() -> None:
         )
 
 
-@app.command()
+@app.command(
+    help="Show migration mapping from pydoclint, pydocstyle, and docsig to Dolce rule references",
+)
 def migrations() -> None:
     if not Rule.pydoclint_mig:
         rich.print("[yellow]No pydoclint migration data available.[/yellow]")
