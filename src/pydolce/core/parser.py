@@ -4,6 +4,7 @@ import ast
 from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
+from pprint import pprint
 from typing import Generator
 
 import pathspec
@@ -39,26 +40,205 @@ class Scopes:
         return [CodeSegmentType.Module]
 
 
+def get_function_head(node: ast.FunctionDef) -> str:
+    """Get the head of a function definition (FunctionDef)"""
+    if not isinstance(node, ast.FunctionDef):
+        raise TypeError("Expected ast.FunctionDef node")
+
+    parts = []
+
+    # Add decorators
+    if node.decorator_list:
+        for decorator in node.decorator_list:
+            parts.append(f"@{ast.unparse(decorator)}")
+
+    # Function definition
+    func_def = f"def {node.name}("
+
+    # Arguments
+    args_parts = []
+
+    # Regular arguments with defaults
+    num_defaults = len(node.args.defaults)
+    num_args = len(node.args.args)
+
+    for i, arg in enumerate(node.args.args):
+        arg_str = arg.arg
+        if arg.annotation:
+            arg_str += f": {ast.unparse(arg.annotation)}"
+
+        # Check if this argument has a default value
+        default_index = i - (num_args - num_defaults)
+        if default_index >= 0:
+            default_value = ast.unparse(node.args.defaults[default_index])
+            arg_str += f" = {default_value}"
+
+        args_parts.append(arg_str)
+
+    # Keyword-only arguments with defaults
+    for i, arg in enumerate(node.args.kwonlyargs):
+        arg_str = arg.arg
+        if arg.annotation:
+            arg_str += f": {ast.unparse(arg.annotation)}"
+
+        # kwonlyargs defaults are in kw_defaults list (can contain None)
+        if i < len(node.args.kw_defaults) and node.args.kw_defaults[i] is not None:
+            _default = node.args.kw_defaults[i]
+            assert _default is not None
+            default_value = ast.unparse(_default)
+            arg_str += f" = {default_value}"
+
+        args_parts.append(arg_str)
+
+    # *args
+    if node.args.vararg:
+        vararg_str = f"*{node.args.vararg.arg}"
+        if node.args.vararg.annotation:
+            vararg_str += f": {ast.unparse(node.args.vararg.annotation)}"
+        args_parts.append(vararg_str)
+
+    # **kwargs
+    if node.args.kwarg:
+        kwarg_str = f"**{node.args.kwarg.arg}"
+        if node.args.kwarg.annotation:
+            kwarg_str += f": {ast.unparse(node.args.kwarg.annotation)}"
+        args_parts.append(kwarg_str)
+
+    func_def += ", ".join(args_parts) + ")"
+
+    # Return annotation
+    if node.returns:
+        func_def += f" -> {ast.unparse(node.returns)}"
+
+    func_def += ":"
+    parts.append(func_def)
+
+    parts = [" " * node.col_offset + part for part in parts]
+
+    return "\n".join(parts)
+
+
+def get_async_function_head(node: ast.AsyncFunctionDef) -> str:
+    """Get the head of an async function definition (AsyncFunctionDef)"""
+    if not isinstance(node, ast.AsyncFunctionDef):
+        raise TypeError("Expected ast.AsyncFunctionDef node")
+
+    # Convert to regular FunctionDef temporarily to reuse logic
+    temp_func = ast.FunctionDef(
+        name=node.name,
+        args=node.args,
+        body=node.body,
+        decorator_list=node.decorator_list,
+        returns=node.returns,
+    )
+
+    # Get the regular function head and replace "def" with "async def"
+    result = get_function_head(temp_func)
+    return result.replace(f"def {node.name}", f"async def {node.name}")
+
+
+def get_class_head(node: ast.ClassDef) -> str:
+    """Get the head of a class definition (ClassDef)"""
+    if not isinstance(node, ast.ClassDef):
+        raise TypeError("Expected ast.ClassDef node")
+
+    parts = []
+
+    # Add decorators
+    if node.decorator_list:
+        for decorator in node.decorator_list:
+            parts.append(f"@{ast.unparse(decorator)}")
+
+    # Class definition
+    class_def = f"class {node.name}"
+
+    # Base classes and keywords
+    if node.bases or node.keywords:
+        bases_and_keywords = []
+
+        # Base classes
+        for base in node.bases:
+            bases_and_keywords.append(ast.unparse(base))
+
+        # Keyword arguments (like metaclass=...)
+        for keyword in node.keywords:
+            bases_and_keywords.append(f"{keyword.arg}={ast.unparse(keyword.value)}")
+
+        class_def += f"({', '.join(bases_and_keywords)})"
+
+    class_def += ":"
+    parts.append(class_def)
+    parts = [" " * node.col_offset + part for part in parts]
+
+    return "\n".join(parts)
+
+
+def get_node_head(node: ast.AST) -> str:
+    """Get the head of any supported AST node type"""
+    if isinstance(node, ast.FunctionDef):
+        return get_function_head(node)
+    elif isinstance(node, ast.AsyncFunctionDef):
+        return get_async_function_head(node)
+    elif isinstance(node, ast.ClassDef):
+        return get_class_head(node)
+    else:
+        raise TypeError(f"Unsupported node type: {type(node).__name__}")
+
+
+class ModuleHeaders:
+    def __init__(self, filepath: str | Path) -> None:
+        self.filepath = filepath if isinstance(filepath, Path) else Path(filepath)
+        self.headers: dict[int, str] = {}
+        self.indentations: dict[int, int] = {}
+        self._parse()
+
+        for lineno, header in self.headers.items():
+            stripped = header.lstrip()
+            self.indentations[lineno] = len(header) - len(stripped)
+
+    def _parse(self) -> None:
+        code = self.filepath.read_text()
+        visitor = ModuleHeadersVisitor()
+        visitor.visit(ast.parse(code))
+        self.headers = visitor.headers
+
+    def __str__(self) -> str:
+        lines = []
+        for lineno in sorted(self.headers.keys()):
+            lines.append(f"{self.headers[lineno]}")
+        return "\n".join(lines)
+
+
+class ModuleHeadersVisitor(ast.NodeVisitor):
+    def __init__(self) -> None:
+        self.headers: dict[int, str] = {}
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        lineno = node.lineno if hasattr(node, "lineno") else 1
+        self.headers[lineno] = get_function_head(node)
+        self.generic_visit(node)
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        lineno = node.lineno if hasattr(node, "lineno") else 1
+        self.headers[lineno] = get_async_function_head(node)
+        self.generic_visit(node)
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        lineno = node.lineno if hasattr(node, "lineno") else 1
+        self.headers[lineno] = get_class_head(node)
+        self.generic_visit(node)
+
+
 class CodeSegmentVisitor(ast.NodeVisitor):
     def __init__(self, filepath: str | Path) -> None:
         self.filepath = filepath if isinstance(filepath, Path) else Path(filepath)
         self.segments: list[CodeSegment] = []
-        self._inside_class = False
+        self._inside_class: ast.ClassDef | None = None
+        self._class_init_visited: ast.FunctionDef | None = None
 
-    def _get_func_segment(
-        self, node: ast.FunctionDef | ast.AsyncFunctionDef
+    def _with_func_fileds(
+        self, segment: CodeSegment, node: ast.FunctionDef | ast.AsyncFunctionDef
     ) -> CodeSegment:
-        code_str = ast.unparse(node)
-        func_doc = ast.get_docstring(node) or ""
-        lineno = node.lineno
-        func_name = node.name
-        codepath = f"{self.filepath}:{lineno} {func_name}"
-        parsed_doc = None
-        try:
-            parsed_doc = parse(func_doc)
-        except ParseError:
-            pass
-
         params = (
             {
                 a.arg: ast.unparse(a.annotation)
@@ -68,45 +248,105 @@ class CodeSegmentVisitor(ast.NodeVisitor):
             if node.args
             else None
         )
-        return CodeSegment(
+
+        segment.params = params
+        segment.args_name = str(node.args.vararg.arg) if node.args.vararg else None
+        segment.args_type = (
+            ast.unparse(node.args.vararg.annotation)
+            if node.args.vararg and node.args.vararg.annotation
+            else None
+        )
+        segment.kwargs_name = str(node.args.kwarg.arg) if node.args.kwarg else None
+        segment.kwargs_type = (
+            ast.unparse(node.args.kwarg.annotation)
+            if node.args.kwarg and node.args.kwarg.annotation
+            else None
+        )
+
+        segment.returns = ast.unparse(node.returns) if node.returns else None
+
+        return segment
+
+    def _get_code_segment(
+        self, node: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef | ast.Module
+    ) -> CodeSegment:
+        if (
+            self._inside_class
+            and isinstance(node, ast.FunctionDef)
+            and node.name == "__init__"
+        ):
+            self._class_init_visited = node
+
+        code_str = ast.unparse(node)
+        func_doc = ast.get_docstring(node) or ""
+        lineno = node.lineno if hasattr(node, "lineno") else 1
+        end_lineno = (
+            node.end_lineno
+            if hasattr(node, "end_lineno") and node.end_lineno is not None
+            else lineno + len(code_str.splitlines()) - 1
+        )
+        node_name = node.name if hasattr(node, "name") else self.filepath.stem
+        col_offset = node.col_offset if hasattr(node, "col_offset") else 0
+
+        codepath = (
+            str(self.filepath)
+            if isinstance(node, ast.Module)
+            else f"{self.filepath}:{lineno} {node_name}"
+        )
+
+        parsed_doc = None
+        try:
+            parsed_doc = parse(func_doc)
+        except ParseError:
+            pass
+
+        head = get_node_head(node) if not isinstance(node, ast.Module) else ""
+
+        segment = CodeSegment(
             file_path=self.filepath,
             code_str=code_str,
-            col_offset=node.col_offset,
+            col_offset=col_offset,
             code_node=node,
             doc=func_doc,
             lineno=lineno,
-            endlineno=node.end_lineno
-            if node.end_lineno
-            else lineno + len(code_str.splitlines()) - 1,
+            endlineno=end_lineno,
             code_path=f"{codepath}",
             parsed_doc=parsed_doc,
-            params=params,
-            args_name=str(node.args.vararg.arg) if node.args.vararg else None,
-            args_type=ast.unparse(node.args.vararg.annotation)
-            if node.args.vararg and node.args.vararg.annotation
-            else None,
-            kwargs_name=str(node.args.kwarg.arg) if node.args.kwarg else None,
-            kwargs_type=ast.unparse(node.args.kwarg.annotation)
-            if node.args.kwarg and node.args.kwarg.annotation
-            else None,
-            returns=ast.unparse(node.returns) if node.returns else None,
-            seg_type=CodeSegmentType.Function
-            if not self._inside_class
-            else CodeSegmentType.Method,
+            code_head=head,
         )
+
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            segment = self._with_func_fileds(segment, node)
+
+        if isinstance(node, ast.Module):
+            segment.seg_type = CodeSegmentType.Module
+        elif isinstance(node, ast.ClassDef):
+            segment.seg_type = CodeSegmentType.Class
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            segment.seg_type = (
+                CodeSegmentType.Method
+                if self._inside_class is not None
+                else CodeSegmentType.Function
+            )
+        return segment
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         self.generic_visit(node)
-        self.segments.append(self._get_func_segment(node))
+        self.segments.append(self._get_code_segment(node))
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
         self.generic_visit(node)
-        self.segments.append(self._get_func_segment(node))
+        self.segments.append(self._get_code_segment(node))
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
-        self._inside_class = True
+        self.segments.append(self._get_code_segment(node))
+        self._inside_class = node
         self.generic_visit(node)
-        self._inside_class = False
+        self._inside_class = None
+
+    def visit_Module(self, node: ast.Module) -> None:
+        self.segments.append(self._get_code_segment(node))
+        self.generic_visit(node)
 
 
 @dataclass
@@ -120,6 +360,7 @@ class CodeSegment:
     endlineno: int
     doc: str
     code_str: str
+    code_head: str
     code_node: ast.AST | None
     parsed_doc: Docstring | None
     seg_type: CodeSegmentType = CodeSegmentType.Function
@@ -258,7 +499,6 @@ def _parse_file(filepath: Path) -> list[CodeSegment]:
     visitor = CodeSegmentVisitor(filepath)
     visitor.visit(ast.parse(code))
     return visitor.segments
-    # yield from CodeSegment.from_str_code(code, filepath=filepath)
 
 
 def code_segments_from_path(

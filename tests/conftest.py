@@ -5,7 +5,7 @@ from typing import Callable
 import pytest
 
 from pydolce.config import DolceConfig
-from pydolce.core.parser import CodeSegment, CodeSegmentVisitor
+from pydolce.core.parser import CodeSegment, CodeSegmentType, CodeSegmentVisitor
 from pydolce.core.rules.rules import RuleContext
 
 
@@ -36,9 +36,9 @@ def ctx() -> RuleContext:
 
 
 @pytest.fixture
-def code_segment_from_func() -> Callable[[Callable], CodeSegment]:
-    def _code_segment_from(func: Callable) -> list[CodeSegment]:
-        code_str = inspect.getsource(func)
+def code_segment() -> Callable[[Callable | str], list[CodeSegment]]:
+    def _code_segment_from(code: Callable | str) -> list[CodeSegment]:
+        code_str = code if isinstance(code, str) else inspect.getsource(code)
         code_str = _unindent_all_possible(code_str)
         visitor = CodeSegmentVisitor("dummy.py")
         visitor.visit(ast.parse(code_str))
@@ -48,11 +48,46 @@ def code_segment_from_func() -> Callable[[Callable], CodeSegment]:
 
 
 @pytest.fixture
-def code_segment_from_str() -> Callable[[str], list[CodeSegment]]:
-    def _code_segment_from(code_str: str) -> list[CodeSegment]:
+def func_code_segments() -> Callable[[Callable | str], list[CodeSegment]]:
+    def _func_code_segment(code: Callable | str) -> list[CodeSegment]:
+        code_str = code if isinstance(code, str) else inspect.getsource(code)
         code_str = _unindent_all_possible(code_str)
         visitor = CodeSegmentVisitor("dummy.py")
         visitor.visit(ast.parse(code_str))
-        return visitor.segments
+        return [
+            segment
+            for segment in visitor.segments
+            if segment.seg_type == CodeSegmentType.Function
+        ]
 
-    return _code_segment_from
+    return _func_code_segment
+
+
+@pytest.fixture
+def method_code_segments() -> Callable[[str], list[CodeSegment]]:
+    def _code_segment_from_str(code_str: str) -> list[CodeSegment]:
+        code_str = _unindent_all_possible(code_str)
+        visitor = CodeSegmentVisitor("dummy.py")
+        visitor.visit(ast.parse(code_str))
+        return [
+            segment
+            for segment in visitor.segments
+            if segment.seg_type == CodeSegmentType.Method
+        ]
+
+    return _code_segment_from_str
+
+
+@pytest.fixture
+def class_code_segments() -> Callable[[str], list[CodeSegment]]:
+    def _code_segment_from_str(code_str: str) -> list[CodeSegment]:
+        code_str = _unindent_all_possible(code_str)
+        visitor = CodeSegmentVisitor("dummy.py")
+        visitor.visit(ast.parse(code_str))
+        return [
+            segment
+            for segment in visitor.segments
+            if segment.seg_type == CodeSegmentType.Class
+        ]
+
+    return _code_segment_from_str

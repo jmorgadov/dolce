@@ -6,7 +6,7 @@ import docstring_parser
 from pydolce.config import DolceConfig
 from pydolce.core.client import LLMClient
 from pydolce.core.errors import LLMResponseError
-from pydolce.core.parser import CodeSegment
+from pydolce.core.parser import CodeSegment, ModuleHeaders
 from pydolce.core.utils import extract_json_object
 
 SYSTEM_SUMMARY_TEMPLATE = """You are an expert Python code understander. Your task is to provide a concise summary of a given Python code based on its code.
@@ -22,6 +22,8 @@ NEVER provide any other information but the summary.
 """
 
 SYSTEM_DOC_SUGGESTION_TEMPLATE = """You are an expert Python understander. Your task is to suggest a description of certain elements of a given Python code.
+
+The user may give you a a description of the module where the code is located for you to have a better context.
 
 Ensure the descriptions are CLEAR, CONCISE, INFORMATIVE, SIMPLE.
 
@@ -75,6 +77,7 @@ def _suggest(
     llm: LLMClient,
     segment: CodeSegment,
     items_to_describe: list[str],
+    module_headers: ModuleHeaders | None = None,
 ) -> str:
     items_to_describe_str = (
         "{\n    "
@@ -85,6 +88,9 @@ def _suggest(
     user_prompt = USER_DOC_SUGGESTION_TEMPLATE.format(
         code=segment.code_str,
     )
+
+    if module_headers is not None:
+        user_prompt += f"\n\nModule context:\n```python\n{module_headers}\n```\n"
 
     suggestion = llm.generate(
         prompt=user_prompt,
@@ -135,7 +141,10 @@ def _build_temporal_docstring(segment: CodeSegment, sugg_json: dict) -> str:
 
 
 def suggest_from_segment(
-    segment: CodeSegment, config: DolceConfig, llm: LLMClient
+    segment: CodeSegment,
+    config: DolceConfig,
+    llm: LLMClient,
+    module_headers: ModuleHeaders | None = None,
 ) -> str:
     if segment.has_doc or not isinstance(
         segment.code_node,
@@ -151,6 +160,7 @@ def suggest_from_segment(
         llm,
         segment,
         items_to_describe=items_to_describe,
+        module_headers=module_headers,
     )
 
     sugg_json_str = extract_json_object(suggestion)

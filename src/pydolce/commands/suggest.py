@@ -7,12 +7,15 @@ import rich.syntax
 
 from pydolce.config import DolceConfig
 from pydolce.core.client import LLMClient, LLMError
-from pydolce.core.parser import CodeSegment, code_segments_from_path
+from pydolce.core.parser import CodeSegment, ModuleHeaders, code_segments_from_path
 from pydolce.core.suggest import suggest_from_segment
 
 
 def _process_segment(
-    segment: CodeSegment, config: DolceConfig, llm: LLMClient
+    segment: CodeSegment,
+    config: DolceConfig,
+    llm: LLMClient,
+    module_headers: ModuleHeaders | None = None,
 ) -> str | None:
     syntax = rich.syntax.Syntax(
         segment.code_str,
@@ -24,7 +27,7 @@ def _process_segment(
     rich.print(syntax)
 
     try:
-        suggestion = suggest_from_segment(segment, config, llm)
+        suggestion = suggest_from_segment(segment, config, llm, module_headers)
     except LLMError as e:
         rich.print(f"[red]✗ Could not get suggestion: {e}[/red]")
         return None
@@ -95,15 +98,24 @@ def suggest(path: Path | str, config: DolceConfig) -> None:
 
     accepted_docstrings: dict[Path, list[tuple[int, int, str]]] = {}
 
+    curr_path = None
+    module_headers = None
     regected = 0
     for segment in code_segments_from_path(path, config.exclude):
+        if curr_path != segment.file_path:
+            curr_path = segment.file_path
+            module_headers = ModuleHeaders(curr_path)
+
         if segment.has_doc or not isinstance(
             segment.code_node,
             (ast.FunctionDef, ast.AsyncFunctionDef),  # Only support functions for now
         ):
             continue
 
-        suggestion = _process_segment(segment, config, llm)
+        if segment.code_node.name.startswith("_"):
+            continue
+
+        suggestion = _process_segment(segment, config, llm, module_headers)
         if suggestion is None:
             continue
 
