@@ -1,12 +1,12 @@
 from pathlib import Path
 
-import pydolce.rules.checkers
+import pydolce.core.rules.checkers
 
 
 def test_al_rules_registered() -> None:
-    registered_rules = set(pydolce.rules.rules.Rule.all_rules.keys())
+    registered_rules = set(pydolce.core.rules.rules.Rule.all_rules.keys())
 
-    checkers_path = Path(pydolce.rules.checkers.__path__[0])
+    checkers_path = Path(pydolce.core.rules.checkers.__path__[0])
 
     # Get all rule codes from the checkers modules
     expected_rules = set()
@@ -15,7 +15,9 @@ def test_al_rules_registered() -> None:
             continue
         module = checker_file.stem
         # count all functions in module that has Rule.register or Rule.llm_register decorator
-        checker_module = __import__(f"pydolce.rules.checkers.{module}", fromlist=[""])
+        checker_module = __import__(
+            f"pydolce.core.rules.checkers.{module}", fromlist=[""]
+        )
         for attr_name in dir(checker_module):
             attr = getattr(checker_module, attr_name)
             if callable(attr) and hasattr(attr, "rule_ref"):

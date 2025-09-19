@@ -7,7 +7,7 @@ from typing import Any
 
 import toml
 
-from pydolce.rules.rules import RuleSet
+from pydolce.core.rules.rules import RuleSet
 
 DEFAULT_EXCLUDES = [
     "__init__.py",

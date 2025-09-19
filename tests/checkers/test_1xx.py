@@ -1,10 +1,10 @@
 from typing import Callable
 
-from pydolce.rules.checkers._1xx_structural import (
+from pydolce.core.rules.checkers._1xx_structural import (
     missing_class_docstring,
     missing_func_docstring,
 )
-from pydolce.rules.rules import RuleContext
+from pydolce.core.rules.rules import RuleContext
 
 
 def test_missing_func_docstring(

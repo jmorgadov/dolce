@@ -1,8 +1,7 @@
-import ast
 from pathlib import Path
 
-from pydolce.parser import CodeSegment, Scopes
-from pydolce.rules.rules import Rule, RuleContext, RuleResult
+from pydolce.core.parser import CodeSegment, Scopes
+from pydolce.core.rules.rules import Rule, RuleContext, RuleResult
 
 _INDEX = int(Path(__file__).stem[1]) * 100
 

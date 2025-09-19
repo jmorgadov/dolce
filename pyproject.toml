@@ -18,6 +18,8 @@ dev = [
     "pytest-dotenv",
     "pytest-mock",
     "ruff",
+    "types-requests",
+    "types-toml",
 ]
 
 docs = ["mkdocs", "mkdocs-material", "pygments"]

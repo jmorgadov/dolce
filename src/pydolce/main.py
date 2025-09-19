@@ -5,7 +5,7 @@ import typer
 
 import pydolce
 from pydolce.config import DolceConfig
-from pydolce.rules.rules import Rule
+from pydolce.core.rules.rules import Rule
 
 app = typer.Typer()
 

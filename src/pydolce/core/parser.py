@@ -223,16 +223,34 @@ class CodeSegment:
 class DocStatus(Enum):
     CORRECT = "CORRECT"
     INCORRECT = "INCORRECT"
+    UNKNOWN = "UNKNOWN"
 
 
 @dataclass
 class CodeSegmentReport:
     status: DocStatus
     issues: list[str]
+    segment: CodeSegment
 
     @staticmethod
-    def correct() -> CodeSegmentReport:
-        return CodeSegmentReport(status=DocStatus.CORRECT, issues=[])
+    def correct(segment: CodeSegment) -> CodeSegmentReport:
+        return CodeSegmentReport(status=DocStatus.CORRECT, issues=[], segment=segment)
+
+    @staticmethod
+    def unknown(
+        segment: CodeSegment, issues: list[str] | None = None
+    ) -> CodeSegmentReport:
+        return CodeSegmentReport(
+            status=DocStatus.UNKNOWN, issues=issues or [], segment=segment
+        )
+
+    @staticmethod
+    def incorrect(
+        segment: CodeSegment, issues: list[str] | None = None
+    ) -> CodeSegmentReport:
+        return CodeSegmentReport(
+            status=DocStatus.INCORRECT, issues=issues or [], segment=segment
+        )
 
 
 def _parse_file(filepath: Path) -> list[CodeSegment]:
@@ -243,7 +261,7 @@ def _parse_file(filepath: Path) -> list[CodeSegment]:
     # yield from CodeSegment.from_str_code(code, filepath=filepath)
 
 
-def code_docs_from_path(
+def code_segments_from_path(
     path: str | Path, excludes: list[str] | None
 ) -> Generator[CodeSegment]:
     path = path if isinstance(path, Path) else Path(path)

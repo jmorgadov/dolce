@@ -1,7 +1,7 @@
 from typing import Callable
 
-from pydolce.rules.checkers._2xx_style import invalid_docstring_style
-from pydolce.rules.rules import RuleContext
+from pydolce.core.rules.checkers._2xx_style import invalid_docstring_style
+from pydolce.core.rules.rules import RuleContext
 
 
 def test_invalid_docstring_style(

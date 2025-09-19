@@ -1,6 +1,6 @@
 from typing import Callable, Generator
 
-from pydolce.rules.checkers._3xx_signature import (
+from pydolce.core.rules.checkers._3xx_signature import (
     duplicate_params,
     missing_param,
     missing_param_description,
@@ -17,7 +17,7 @@ from pydolce.rules.checkers._3xx_signature import (
     wrong_return_type,
     wrong_yield_type,
 )
-from pydolce.rules.rules import RuleContext
+from pydolce.core.rules.rules import RuleContext
 
 
 def test_duplicate_params(code_segment_from_func: Callable) -> None:

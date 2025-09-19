@@ -5,8 +5,8 @@ from typing import Callable
 import pytest
 
 from pydolce.config import DolceConfig
-from pydolce.parser import CodeSegment, CodeSegmentVisitor
-from pydolce.rules.rules import RuleContext
+from pydolce.core.parser import CodeSegment, CodeSegmentVisitor
+from pydolce.core.rules.rules import RuleContext
 
 
 def _unindent_all_possible(code: str) -> str:

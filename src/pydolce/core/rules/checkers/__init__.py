@@ -1,4 +1,4 @@
-from pydolce.rules.checkers import (  # noqa: F401  (checkers are registered on import)
+from pydolce.core.rules.checkers import (  # noqa: F401  (checkers are registered on import)
     _1xx_structural,
     _2xx_style,
     _3xx_signature,

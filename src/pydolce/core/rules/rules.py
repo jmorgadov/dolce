@@ -8,14 +8,16 @@ if TYPE_CHECKING:
     from pydolce.config import DolceConfig
 
 import pydolce
-from pydolce.parser import CodeSegment, CodeSegmentType
+from pydolce.core.parser import CodeSegment, CodeSegmentType
 
 DEFAULT_PREFIX = "DCE"
 
 
 _GROUPS = {
     int(p.stem[1]): p.stem[5:].capitalize()
-    for i, p in enumerate((Path(pydolce.rules.__path__[0]) / "checkers").glob("*.py"))
+    for i, p in enumerate(
+        (Path(pydolce.core.rules.__path__[0]) / "checkers").glob("*.py")
+    )
     if p.stem != "__init__"
 }
 
