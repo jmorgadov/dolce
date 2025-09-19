@@ -1,14 +1,22 @@
 # Dolce
 
-*Because broken docs leave a bitter taste.*
+***Because broken docs leave a bitter taste.***
+
+<a ref="https://pypi.org/project/pydolce/"><img src="https://img.shields.io/pypi/v/pydolce?color=blue&label=PyPI&logo=python&style=flat-square" alt="PyPI version"></a>
+
 
 **Dolce** is a tool designed to help you maintain high-quality docstrings/documentation in your Python code. In addition, it leverages Large Language Models (LLMs) to ensure that your docstrings are semantically consistent with your code.
 
+> [!NOTE]
+> **Dolce** is still in early development. While it is functional, some features are yet to be implemented and improvements are ongoing. Your feedback and contributions are highly appreciated!
+
 ## 🚀 Quick showcase
 
-Check docstrings issues in your codebase (even semantic issues with the help of LLMs):
+Check docstrings issues with static and LLM-powered rules:
 <img src="docs/src/statics/check.svg"/>
-Suggest missing docstrings (powered by LLMs):
+
+Suggest missing docstrings by leveraging LLMs:
+
 <img src="docs/src/statics/sugg.svg"/>
 
 ## ✨ Features
@@ -54,7 +62,7 @@ dev = [
 Then you can use it by running:
 
 ```bash
-uv run dolce
+uv run dolce [COMMAND]
 ```
 
 ## 💻 Usage
@@ -105,7 +113,7 @@ provider = "ollama"
 api_key = "YOUR_API_KEY_ENVIROMENT_VAR" # Optional, needed for non local providers
 ```
 
-> [!INFO]
+> [!TIP]
 > `qwen3:8b` has relatively good performance while fitting in an RTX 4060 GPU (8GB VRAM)
 
 You can visit the [Ollama](https://ollama.com/) to check how to install and run models locally.

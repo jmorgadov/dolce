@@ -132,7 +132,7 @@ version_pattern = "MAJOR.MINOR.PATCH[-TAGNUM]"
 "pyproject.toml" = ['^version = "{version}"', '^current_version = "{version}"']
 "src/pydolce/__init__.py" = ['^__version__ = "{version}"$']
 
-# [tool.dolce]
-# url = "http://localhost:11434"
-# model = "qwen3:8b"
-# provider = "ollama"
+[tool.dolce]
+url = "http://localhost:11434"
+model = "qwen3:8b"
+provider = "ollama"
