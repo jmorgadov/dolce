@@ -1,6 +1,6 @@
 [project]
 name = "pydolce"
-version = "0.1.4"
+version = "0.1.5"
 description = "The sweet way to catch outdated docstrings"
 readme = "README.md"
 requires-python = ">= 3.10"
@@ -127,7 +127,7 @@ env_override_existing_values = 1
 env_files = [".env.test"]
 
 [tool.bumpver]
-current_version = "0.1.4"
+current_version = "0.1.5"
 version_pattern = "MAJOR.MINOR.PATCH[-TAGNUM]"
 
 [tool.bumpver.file_patterns]

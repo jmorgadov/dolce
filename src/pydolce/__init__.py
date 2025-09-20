@@ -5,7 +5,7 @@ from pydolce.commands.check import check
 from pydolce.commands.restyle import restyle
 from pydolce.commands.suggest import suggest
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
