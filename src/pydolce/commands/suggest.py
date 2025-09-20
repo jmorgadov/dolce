@@ -108,7 +108,7 @@ def suggest(path: Path | str, config: DolceConfig) -> None:
 
         if segment.has_doc or not isinstance(
             segment.code_node,
-            (ast.FunctionDef, ast.AsyncFunctionDef),  # Only support functions for now
+            (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef),
         ):
             continue
 

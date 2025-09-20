@@ -6,20 +6,8 @@ import docstring_parser
 from pydolce.config import DolceConfig
 from pydolce.core.client import LLMClient
 from pydolce.core.errors import LLMResponseError
-from pydolce.core.parser import CodeSegment, ModuleHeaders
-from pydolce.core.utils import extract_json_object
-
-SYSTEM_SUMMARY_TEMPLATE = """You are an expert Python code understander. Your task is to provide a concise summary of a given Python code based on its code.
-
-EXACT OUTPUT FORMAT IN TEXT:
-```
-[summary]
-```
-
-You MUST ONLY provide the summary, without any additional text or formatting, nor your thinking process.
-
-NEVER provide any other information but the summary.
-"""
+from pydolce.core.parser import CodeSegment, CodeSegmentType, ModuleHeaders
+from pydolce.core.utils import doc_style_from_str, extract_json_object
 
 SYSTEM_DOC_SUGGESTION_TEMPLATE = """You are an expert Python understander. Your task is to suggest a description of certain elements of a given Python code.
 
@@ -43,23 +31,25 @@ USER_DOC_SUGGESTION_TEMPLATE = """```python
 """
 
 
-def _extract_function_items_to_describe(
+def _extract_items_to_describe(
     segment: CodeSegment,
 ) -> list[str] | None:
-    assert isinstance(segment.code_node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    assert isinstance(
+        segment.code_node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+    )
 
     node = segment.code_node
 
     if node.name.startswith("_"):
         return None  # Skip private or protected functions
 
-    if segment.is_property():
-        # It's a property, only describe the return value if any
-        return None
-
     items = [
-        '"code_simple_description": [Header of the docstring. A brief short description of what the code does.]'
+        '"code_simple_description": [Header of the docstring. A brief short description of what it is this code for (not saying what does it do).]',
     ]
+
+    if segment.is_property() or segment.seg_type == CodeSegmentType.Class:
+        return items
+
     for param in segment.params or {}:
         items.append(f'"param_{param}": "[description of the parameter {param}]"')
 
@@ -68,7 +58,11 @@ def _extract_function_items_to_describe(
     elif segment.returns and segment.returns != "None":
         items.append('"return": "[description of the return value]"')
 
-    # TODO: Handle raises
+    # Dummy heuristic but good enough for now
+    if "raise" in segment.code_str:
+        items.append(
+            '"raises": {dictionary with exception that the functions explicitly raises. Keys are the exception names and values are their descriptions. If no exceptions are raised, use an empty dictionary.}'
+        )
 
     return items
 
@@ -136,6 +130,11 @@ def _build_temporal_docstring(segment: CodeSegment, sugg_json: dict) -> str:
             _docstring_str += f"{_section}\n" + "-" * len(_section) + "\n"
             _docstring_str += f"{return_type}\n    {descr}\n"
 
+        elif key == "raises" and isinstance(descr, dict) and descr:
+            _docstring_str += "Raises\n------\n"
+            for exc, description in descr.items():
+                _docstring_str += f"{exc}\n    {description}\n"
+
     _docstring_str += '"""'
     return _docstring_str
 
@@ -146,13 +145,23 @@ def suggest_from_segment(
     llm: LLMClient,
     module_headers: ModuleHeaders | None = None,
 ) -> str:
+    style = doc_style_from_str(
+        config.ensure_style if config.ensure_style is not None else "google"
+    )
+    if style is None:
+        raise ValueError("Invalid docstring style")
+
     if segment.has_doc or not isinstance(
         segment.code_node,
-        (ast.FunctionDef, ast.AsyncFunctionDef),  # Only support functions for now
+        (
+            ast.FunctionDef,
+            ast.AsyncFunctionDef,
+            ast.ClassDef,
+        ),
     ):
         raise ValueError("Suggestion can only be made for segments without docstring")
 
-    items_to_describe = _extract_function_items_to_describe(segment)
+    items_to_describe = _extract_items_to_describe(segment)
     if not items_to_describe:
         return ""
 
@@ -178,7 +187,7 @@ def suggest_from_segment(
             docstring_parser.parse(
                 _docstring_str, style=docstring_parser.DocstringStyle.NUMPYDOC
             ),
-            style=docstring_parser.DocstringStyle.GOOGLE,
+            style=style,
         )
 
         suggestion = suggestion.replace('    """:', '"""')  # Fix docstring indentation

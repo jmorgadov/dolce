@@ -4,7 +4,6 @@ import ast
 from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
-from pprint import pprint
 from typing import Generator
 
 import pathspec
@@ -267,6 +266,59 @@ class CodeSegmentVisitor(ast.NodeVisitor):
 
         return segment
 
+    def get_docstring_with_location(
+        self, node: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef | ast.Module
+    ) -> dict | None:
+        """
+        Extract docstring from a function AST node with exact location information.
+
+        Args:
+            func_node: ast.FunctionDef or ast.AsyncFunctionDef node
+
+        Returns:
+            dict with 'value', 'lineno', 'col_offset', 'end_lineno', 'end_col_offset'
+            or None if no docstring found
+        """
+        if not isinstance(
+            node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Module)
+        ):
+            raise ValueError("Expected FunctionDef or AsyncFunctionDef node")
+
+        # Check if function has any statements
+        if not node.body:
+            return None
+
+        # Get the first statement
+        first_stmt = node.body[0]
+
+        # Check if it's an Expr node containing a string literal
+        if isinstance(first_stmt, ast.Expr) and isinstance(
+            first_stmt.value, ast.Constant
+        ):
+            if isinstance(first_stmt.value.value, str):
+                # This is the docstring
+                string_node = first_stmt.value
+                return {
+                    "value": string_node.value,
+                    "lineno": string_node.lineno,
+                    "col_offset": string_node.col_offset,
+                    "end_lineno": string_node.end_lineno,
+                    "end_col_offset": string_node.end_col_offset,
+                }
+
+        # For Python < 3.8, string literals might be ast.Str instead of ast.Constant
+        elif isinstance(first_stmt, ast.Expr) and isinstance(first_stmt.value, ast.Str):
+            string_node = first_stmt.value
+            return {
+                "value": string_node.s,
+                "lineno": string_node.lineno,
+                "col_offset": string_node.col_offset,
+                "end_lineno": getattr(string_node, "end_lineno", None),
+                "end_col_offset": getattr(string_node, "end_col_offset", None),
+            }
+
+        return None
+
     def _get_code_segment(
         self, node: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef | ast.Module
     ) -> CodeSegment:
@@ -278,7 +330,7 @@ class CodeSegmentVisitor(ast.NodeVisitor):
             self._class_init_visited = node
 
         code_str = ast.unparse(node)
-        func_doc = ast.get_docstring(node) or ""
+        func_doc = ast.get_docstring(node, clean=False) or ""
         lineno = node.lineno if hasattr(node, "lineno") else 1
         end_lineno = (
             node.end_lineno
@@ -314,6 +366,12 @@ class CodeSegmentVisitor(ast.NodeVisitor):
             parsed_doc=parsed_doc,
             code_head=head,
         )
+
+        doc_loc = self.get_docstring_with_location(node)
+        if doc_loc is not None:
+            segment.doc_lineno = doc_loc["lineno"]
+            segment.doc_col_offset = doc_loc["col_offset"]
+            segment.doc_end_lineno = doc_loc["end_lineno"]
 
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             segment = self._with_func_fileds(segment, node)
@@ -364,6 +422,11 @@ class CodeSegment:
     code_node: ast.AST | None
     parsed_doc: Docstring | None
     seg_type: CodeSegmentType = CodeSegmentType.Function
+
+    # Docstring location info
+    doc_lineno: int | None = None
+    doc_end_lineno: int | None = None
+    doc_col_offset: int | None = None
 
     # Function/method specific
     params: dict[str, str] | None = None

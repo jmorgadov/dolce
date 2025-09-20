@@ -55,8 +55,16 @@ def suggest(
             help="Path to the Python file or directory to check",
         ),
     ] = ".",
+    style: Annotated[
+        str | None,
+        typer.Option(
+            "--style",
+            help="Docstring style to use for suggestions (overrides config)",
+        ),
+    ] = None,
 ) -> None:
     _config = DolceConfig.from_pyproject()
+    _config.update(ensure_style=style)
 
     if not _config.url:
         rich.print(
@@ -71,6 +79,28 @@ provider = "ollama"
         )
         return
     pydolce.suggest(path, _config)
+
+
+@app.command(
+    help="Rewrite docstrings to conform to the specified style",
+)
+def restyle(
+    path: Annotated[
+        str,
+        typer.Argument(
+            help="Path to the Python file or directory to check",
+        ),
+    ] = ".",
+    style: Annotated[
+        str,
+        typer.Argument(
+            help="Docstring style to use for restyling (overrides config)",
+        ),
+    ] = "google",
+) -> None:
+    _config = DolceConfig.from_pyproject()
+    _config.update(ensure_style=style)
+    pydolce.restyle(path, _config)
 
 
 @app.command(

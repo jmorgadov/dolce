@@ -1,3 +1,6 @@
+from docstring_parser import DocstringStyle
+
+
 def extract_json_object(text: str) -> str | None:
     start = text.find("{")
     if start == -1:
@@ -28,4 +31,17 @@ def extract_json_object(text: str) -> str | None:
                 if brace_count == 0:
                     return text[start : i + 1]
 
+    return None
+
+
+def doc_style_from_str(style_name: str) -> DocstringStyle | None:
+    style_name = style_name.lower()
+    if style_name in ["google", "google style"]:
+        return DocstringStyle.GOOGLE
+    elif style_name in ["numpy", "numpy style"]:
+        return DocstringStyle.NUMPYDOC
+    elif style_name in ["sphinx", "restructuredtext", "rest"]:
+        return DocstringStyle.REST
+    elif style_name in ["epy"]:
+        return DocstringStyle.EPYDOC
     return None
