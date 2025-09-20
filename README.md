@@ -19,6 +19,10 @@ Suggest missing docstrings by leveraging LLMs:
 
 <img src="docs/src/statics/sugg.svg"/>
 
+Restyle your entire codebase docstrings to a consistent format:
+
+<img src="docs/src/statics/restyle.svg"/>
+
 ## ✨ Features
 
 - **Comprensive Rule Set**: Comes with a variety of built-in rules to check for common docstring issues, including:
@@ -34,6 +38,8 @@ Suggest missing docstrings by leveraging LLMs:
   ... etc
 
 - **Generation docstrings**: Generate missing docstrings across your codebase (with the help of LLMs) by running a single command.
+
+- **Restyling**: Automatically restyle your existing docstrings to a consistent format (Google, NumPy, ReST, Epy, etc.).
 
 - **Customizable**: Easily configure which rules to apply, LLMs config (model, provider, url, etc.), and other settings via a `pyproject.toml` file.
 

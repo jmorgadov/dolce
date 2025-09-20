@@ -1,0 +1,124 @@
+<svg height="567.2" width="659.2" xmlns="http://www.w3.org/2000/svg">
+<g transform="translate(32,16)">
+<filter id="shadow">
+<feGaussianBlur stdDeviation="12"/>
+</filter>
+<rect fill="#000000c0" filter="url(#shadow)" height="503.2" rx="10" ry="10" width="595.2" x="4" y="12"/>
+<rect fill="#282c34" height="503.2" rx="10" ry="10" width="595.2"/>
+<clipPath id="header">
+<rect height="28" width="595.2"/>
+</clipPath>
+<rect clip-path="url(#header)" fill="#383837" height="56" rx="10" ry="10" width="595.2"/>
+<line stroke="#000000c0" stroke-width="0.5" x1="0" x2="595.2" y1="28" y2="28"/><text dominant-baseline="central" fill="#b3b3b3" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" x="297.6" y="14">uv run dolce restyle tests/samples/typos.py numpy</text>
+<g>
+<circle cx="14" cy="14" fill="#ff5f56" r="6" stroke="#ff5f56" stroke-width="0.5"/>
+<circle cx="34" cy="14" fill="#ffbd2e" r="6" stroke="#ffbd2e" stroke-width="0.5"/>
+<circle cx="54" cy="14" fill="#28c941" r="6" stroke="#28c941" stroke-width="0.5"/>
+</g>
+<svg class="terminal" font-family="JetBrains Mono, Fira Code, Source Code Pro, Cascadia Code, Consolas, Menlo, Monaco, DejaVu Sans Mono, monospace, Symbols Nerd Font Mono" font-size="12" height="475.2" width="595.2" y="28">
+<svg fill="#dcdfe4" x="9.6" y="7.2">
+<g>
+<svg height="460.8" viewBox="0 0 48 38.4" width="576">
+<g stroke-width="0.025">
+<path d="M0,3.6 H48 V34.8 H0 Z" fill="#181818" stroke="#181818"/>
+</g>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="0">
+<text xml:space="preserve" y="0.96em"><tspan fill="#c678dd">Dolce </tspan><tspan fill="#c678dd">- </tspan><tspan fill="#c678dd" font-weight="bold">0.1</tspan><tspan fill="#c678dd">.</tspan><tspan fill="#c678dd" font-weight="bold">4</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="28.8">
+<text xml:space="preserve" y="0.96em"><tspan fill="#dcdfe4" font-weight="bold">Changes</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="43.2">
+<text xml:space="preserve" y="0.96em"><tspan fill="#fd807f">--- </tspan><tspan fill="#fd807f">tests/samples/typos.py </tspan><tspan fill="#fd807f">(before)+++ </tspan><tspan fill="#fd807f">tests/samples/typos.py </tspan><tspan fill="#fd807f">(after)@@ </tspan><tspan fill="#fd807f">-1,12 </tspan><tspan fill="#fd807f">+1</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="57.6">
+<text xml:space="preserve" y="0.96em"><tspan fill="#dcdfe4" x="3em">""" </tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="72">
+<text xml:space="preserve" y="0.96em"><tspan fill="#dcdfe4" x="3em">Add </tspan><tspan fill="#dcdfe4">two </tspan><tspan fill="#dcdfe4">intgers. </tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="86.4">
+<text xml:space="preserve" y="0.96em"><tspan fill="#fd807f">-</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="100.8">
+<text xml:space="preserve" y="0.96em"><tspan fill="#fd807f">- </tspan><tspan fill="#fd807f" x="3em">Args:</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="115.2">
+<text xml:space="preserve" y="0.96em"><tspan fill="#fd807f">- </tspan><tspan fill="#fd807f" x="5.4em">a </tspan><tspan fill="#fd807f">(int): </tspan><tspan fill="#fd807f">Te </tspan><tspan fill="#fd807f">first </tspan><tspan fill="#fd807f">integer.</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="129.6">
+<text xml:space="preserve" y="0.96em"><tspan fill="#fd807f">- </tspan><tspan fill="#fd807f" x="5.4em">b </tspan><tspan fill="#fd807f">(int): </tspan><tspan fill="#fd807f">The </tspan><tspan fill="#fd807f">second </tspan><tspan fill="#fd807f">integer.</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="144">
+<text xml:space="preserve" y="0.96em"><tspan fill="#fd807f">-</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="158.4">
+<text xml:space="preserve" y="0.96em"><tspan fill="#fd807f">- </tspan><tspan fill="#fd807f" x="3em">Returns:</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="172.8">
+<text xml:space="preserve" y="0.96em"><tspan fill="#fd807f">- </tspan><tspan fill="#fd807f" x="5.4em">int: </tspan><tspan fill="#fd807f">The </tspan><tspan fill="#fd807f">sum </tspan><tspan fill="#fd807f">of </tspan><tspan fill="#fd807f">the </tspan><tspan fill="#fd807f">two </tspan><tspan fill="#fd807f">integers.</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="187.2">
+<text xml:space="preserve" y="0.96em"><tspan fill="#96d58a">+ </tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="201.6">
+<text xml:space="preserve" y="0.96em"><tspan fill="#96d58a">+ </tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="216">
+<text xml:space="preserve" y="0.96em"><tspan fill="#96d58a">+ </tspan><tspan fill="#96d58a" x="3em">Parameters</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="230.4">
+<text xml:space="preserve" y="0.96em"><tspan fill="#96d58a">+ </tspan><tspan fill="#96d58a" x="3em">----------</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="244.8">
+<text xml:space="preserve" y="0.96em"><tspan fill="#96d58a">+ </tspan><tspan fill="#96d58a" x="3em">a </tspan><tspan fill="#96d58a">: </tspan><tspan fill="#96d58a">int</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="259.2">
+<text xml:space="preserve" y="0.96em"><tspan fill="#96d58a">+ </tspan><tspan fill="#96d58a" x="5.4em">Te </tspan><tspan fill="#96d58a">first </tspan><tspan fill="#96d58a">integer.</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="273.6">
+<text xml:space="preserve" y="0.96em"><tspan fill="#96d58a">+ </tspan><tspan fill="#96d58a" x="3em">b </tspan><tspan fill="#96d58a">: </tspan><tspan fill="#96d58a">int</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="288">
+<text xml:space="preserve" y="0.96em"><tspan fill="#96d58a">+ </tspan><tspan fill="#96d58a" x="5.4em">The </tspan><tspan fill="#96d58a">second </tspan><tspan fill="#96d58a">integer.</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="302.4">
+<text xml:space="preserve" y="0.96em"><tspan fill="#96d58a">+ </tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="316.8">
+<text xml:space="preserve" y="0.96em"><tspan fill="#96d58a">+ </tspan><tspan fill="#96d58a" x="3em">Returns</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="331.2">
+<text xml:space="preserve" y="0.96em"><tspan fill="#96d58a">+ </tspan><tspan fill="#96d58a" x="3em">-------</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="345.6">
+<text xml:space="preserve" y="0.96em"><tspan fill="#96d58a">+ </tspan><tspan fill="#96d58a" x="3em">int</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="360">
+<text xml:space="preserve" y="0.96em"><tspan fill="#96d58a">+ </tspan><tspan fill="#96d58a" x="5.4em">The </tspan><tspan fill="#96d58a">sum </tspan><tspan fill="#96d58a">of </tspan><tspan fill="#96d58a">the </tspan><tspan fill="#96d58a">two </tspan><tspan fill="#96d58a">integers.</tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="374.4">
+<text xml:space="preserve" y="0.96em"><tspan fill="#dcdfe4" x="3em">""" </tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="388.8">
+<text xml:space="preserve" y="0.96em"><tspan fill="#dcdfe4" x="3em">return </tspan><tspan fill="#dcdfe4">a </tspan><tspan fill="#dcdfe4">+ </tspan><tspan fill="#dcdfe4">b </tspan></text>
+</svg>
+<svg height="14.4" overflow="hidden" width="576" y="417.6">
+<text xml:space="preserve" y="0.96em"><tspan fill="#98c379">Updated </tspan><tspan fill="#98c379">tests/samples/typos.py</tspan></text>
+</svg>
+</g>
+</svg>
+</svg>
+<rect fill="none" height="503.2" rx="10" ry="10" stroke="#000000" stroke-width="0.5" width="595.2"/>
+<rect fill="none" height="501.2" rx="9" ry="9" stroke="#f0f0f080" stroke-width="0.5" width="593.2" x="1" y="1"/>
+</g>
+<style>
+@font-face {
+	font-family: JetBrains Mono;
+	font-weight: 100 800;
+	font-style: normal;
+	src: url(https://raw.githubusercontent.com/pamburus/fonts/refs/heads/main/JetBrainsMono/fonts/variable/JetBrainsMono%5Bwght%5D.woff2) format('woff2');
+}
+</style>
+</svg>

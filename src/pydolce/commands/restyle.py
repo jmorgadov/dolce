@@ -32,9 +32,9 @@ def _process_restyled_file(
         rich.print(diff_syntax)
         # TODO: add confirmation prompt
         filepath.write_text("".join(new_lines), encoding="utf-8")
-        rich.print(f"[green]✔ Updated {filepath}[/green]")
+        rich.print(f"[green]Updated {filepath}[/green]")
     else:
-        rich.print(f"[green]✔ No changes needed in {filepath}[/green]")
+        rich.print(f"[green]No changes needed in {filepath}[/green]")
 
 
 def restyle(path: Path | str, config: DolceConfig) -> None:
