@@ -171,6 +171,7 @@ def check_segment(
     ctx: RuleContext | None = None,
 ) -> CodeSegmentReport:
     assert config.rule_set is not None, "Rule set must be defined in config"
+
     ctx = RuleContext(config=config) if ctx is None else ctx
     quick_issues = config.rule_set.check(segment, ctx)
     if quick_issues:

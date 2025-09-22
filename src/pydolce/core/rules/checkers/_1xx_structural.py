@@ -34,6 +34,7 @@ def invalid_docstring_syntax(
     "Module is missing a docstring.",
     scopes=Scopes.modules(),
     pydocstyle_rule="D100",
+    default_enabled=False,
 )
 def missing_module_docstring(
     segment: CodeSegment, _ctx: RuleContext

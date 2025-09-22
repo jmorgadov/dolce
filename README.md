@@ -41,6 +41,8 @@ Restyle your entire codebase docstrings to a consistent format:
 
 - **Restyling**: Automatically restyle your existing docstrings to a consistent format (Google, NumPy, ReST, Epy, etc.).
 
+- **Cache system**: Avoid re-checking unchanged code.
+
 - **Customizable**: Easily configure which rules to apply, LLMs config (model, provider, url, etc.), and other settings via a `pyproject.toml` file.
 
 ... more features coming soon!

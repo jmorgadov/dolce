@@ -8,6 +8,7 @@ import rich
 from pydolce.config import DolceConfig
 from pydolce.core.check import check_segment
 from pydolce.core.client import LLMClient
+from pydolce.core.errors import CacheError
 from pydolce.core.parser import (
     CodeSegmentReport,
     DocStatus,
@@ -41,14 +42,32 @@ def check(path: str, config: DolceConfig) -> None:
             rich.print("[red]✗ Connection failed[/red]")
             return
 
+    if not config.url:
+        config.rule_set.remove_llm_rules()
+
     reports: list[CodeSegmentReport] = []
 
+    try:
+        handler = config.get_cache_handler()
+    except CacheError as e:
+        rich.print(f"[red][ ERROR ][/red] {e}")
+        return
+
     ctx = RuleContext(config=config)
-    for pair in code_segments_from_path(checkpath, config.exclude):
-        loc = f"[blue]{pair.code_path}[/blue]"
+    for segment in code_segments_from_path(checkpath, config.exclude):
+        if not config.rule_set.applicable_to(segment) or (
+            config.segment_types is not None
+            and segment.seg_type not in config.segment_types
+        ):
+            continue
+
+        loc = f"[blue]{segment.code_path}[/blue]"
         rich.print(f"[white]\\[  ...  ][/white] [blue]{loc}[/blue]", end="\r")
 
-        report = check_segment(pair, config, llm, ctx)
+        report = handler.get_check(segment) or check_segment(segment, config, llm, ctx)
+        handler.set_check(
+            segment, report, sync=llm is not None
+        )  # Sync every time if LLM is used
 
         if report.status == DocStatus.INCORRECT:
             rich.print(f"[red][ ERROR ][/red] {loc}")
@@ -62,6 +81,9 @@ def check(path: str, config: DolceConfig) -> None:
             rich.print(f"[green][  OK   ][/green] {loc}")
 
         reports.append(report)
+
+    handler.sync_cache()
+
     _print_summary(reports)
 
     if any(report.status == DocStatus.INCORRECT for report in reports):

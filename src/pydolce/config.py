@@ -7,6 +7,8 @@ from typing import Any
 
 import toml
 
+from pydolce.core.cache import CacheHandler
+from pydolce.core.parser import CodeSegmentType
 from pydolce.core.rules.rules import RuleSet
 
 DEFAULT_EXCLUDES = [
@@ -22,6 +24,12 @@ DEFAULT_EXCLUDES = [
     "dist",
 ]
 
+DEFAULT_SCOPES = [
+    "function",
+    "class",
+    "method",
+]
+
 
 @dataclass
 class DolceConfig:
@@ -35,8 +43,11 @@ class DolceConfig:
     ignore_kwargs: bool = True
     ensure_style: str | None = None  # e.g., "google", "numpy", "sphinx"
     ignore_private_functions: bool = True
+    scopes: list[str] | None = None
 
+    # This are initialized after parsing pyproject.toml
     rule_set: RuleSet | None = None
+    segment_types: set[CodeSegmentType] | None = None
 
     # LLM options
     provider: str = ""  # "ollama"
@@ -48,6 +59,16 @@ class DolceConfig:
     timeout: int = 120
     max_retries: int = 3
     retry_delay: float = 1.0
+
+    _cache_handler: CacheHandler | None = None
+
+    def get_cache_handler(self) -> CacheHandler:
+        """Lazily initializes and returns the CacheHandler based on the current rule set."""
+        if self.rule_set is None:
+            raise ValueError("RuleSet must be defined to use CacheHandler.")
+        if self._cache_handler is None:
+            self._cache_handler = CacheHandler(self.rule_set)
+        return self._cache_handler
 
     def describe(self) -> str:
         """
@@ -97,6 +118,9 @@ class DolceConfig:
         config["api_key"] = (
             None if api_key_env_var is None else os.environ.get(api_key_env_var, None)
         )
+
+        scopes = config.get("scopes", DEFAULT_SCOPES)
+        config["segment_types"] = {CodeSegmentType.from_str(scope) for scope in scopes}
 
         return DolceConfig(**config)
 

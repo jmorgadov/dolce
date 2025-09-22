@@ -16,8 +16,20 @@ class CodeSegmentType(Enum):
     Class = auto()
     Module = auto()
 
+    @staticmethod
+    def from_str(type_str: str) -> CodeSegmentType:
+        type_str = type_str.lower()
+        for _type in CodeSegmentType.__members__:
+            if _type.lower() == type_str:
+                return CodeSegmentType[_type]
+        raise ValueError(f"Unknown CodeSegmentType string: {type_str}")
+
 
 class Scopes:
+    @staticmethod
+    def all() -> list[CodeSegmentType]:
+        return list(CodeSegmentType.__members__.values())
+
     @staticmethod
     def functions() -> list[CodeSegmentType]:
         return [CodeSegmentType.Function, CodeSegmentType.Method]
@@ -341,7 +353,7 @@ class CodeSegmentVisitor(ast.NodeVisitor):
         col_offset = node.col_offset if hasattr(node, "col_offset") else 0
 
         codepath = (
-            str(self.filepath)
+            f"{self.filepath} (module)"
             if isinstance(node, ast.Module)
             else f"{self.filepath}:{lineno} {node_name}"
         )
@@ -528,6 +540,18 @@ class DocStatus(Enum):
     CORRECT = "CORRECT"
     INCORRECT = "INCORRECT"
     UNKNOWN = "UNKNOWN"
+
+    @staticmethod
+    def from_str(status_str: str) -> DocStatus:
+        status_str = status_str.upper()
+        if status_str == "CORRECT":
+            return DocStatus.CORRECT
+        elif status_str == "INCORRECT":
+            return DocStatus.INCORRECT
+        elif status_str == "UNKNOWN":
+            return DocStatus.UNKNOWN
+        else:
+            raise ValueError(f"Unknown DocStatus string: {status_str}")
 
 
 @dataclass

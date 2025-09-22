@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, ClassVar, Generator, Iterable
@@ -8,7 +9,7 @@ if TYPE_CHECKING:
     from pydolce.config import DolceConfig
 
 import pydolce
-from pydolce.core.parser import CodeSegment, CodeSegmentType
+from pydolce.core.parser import CodeSegment, CodeSegmentType, Scopes
 
 DEFAULT_PREFIX = "DCE"
 
@@ -60,6 +61,8 @@ LLMRulePrompter = Callable[[CodeSegment, RuleContext], str | None]
 
 class Rule:
     all_rules: ClassVar[dict[str, Rule]] = {}
+    default_rules: ClassVar[set[str]] = set()
+    llm_rules: ClassVar[set[str]] = set()
 
     """
     Migration schema from pydoclint. Keys are pydoclint rule reference, values
@@ -105,9 +108,11 @@ class Rule:
         return _GROUPS.get(self.group, "Unknown")
 
     @classmethod
-    def _register(cls, rule: Rule) -> None:
+    def _register(cls, rule: Rule, default_enabled: bool) -> None:
         assert rule.ref not in cls.all_rules, f"Rule {rule.ref} already registered"
         cls.all_rules[rule.ref] = rule
+        if default_enabled:
+            cls.default_rules.add(rule.ref)
 
     @classmethod
     def _pydoclint_mig_register(cls, pydoclint_rule: str, rule_ref: str) -> None:
@@ -139,12 +144,13 @@ class Rule:
         pydocstyle_rule: str | None = None,
         docsig_rule: str | None = None,
         scopes: list[CodeSegmentType] | None = None,
+        default_enabled: bool = True,
     ) -> Callable:
         def decorator(func: RuleChecker) -> Callable:
             rule_name = func.__name__.replace("_", "-")
             rule = Rule(code, rule_name, description, checker=func, scopes=scopes)
 
-            cls._register(rule)
+            cls._register(rule, default_enabled)
             if pydoclint_rule is not None:
                 cls._pydoclint_mig_register(pydoclint_rule, rule.ref)
 
@@ -161,12 +167,17 @@ class Rule:
 
     @classmethod
     def llm_register(
-        cls, code: int, description: str, scopes: list[CodeSegmentType] | None = None
+        cls,
+        code: int,
+        description: str,
+        scopes: list[CodeSegmentType] | None = None,
+        default_enabled: bool = True,
     ) -> Callable:
         def decorator(func: LLMRulePrompter) -> Callable:
             rule_name = func.__name__.replace("_", "-")
             rule = Rule(code, rule_name, description, prompter=func, scopes=scopes)
-            cls._register(rule)
+            cls._register(rule, default_enabled)
+            cls.llm_rules.add(rule.ref)
             func.__dict__["rule_ref"] = rule.ref
             return func
 
@@ -184,21 +195,45 @@ class Rule:
 
 class RuleSet:
     def __init__(
-        self, target: list[str] | None = None, disable: list[str] | None = None
+        self,
+        target: list[str] | set[str] | None = None,
+        disable: list[str] | set[str] | None = None,
     ):
         if target is None:
-            target = list(Rule.all_rules.keys())
+            target = Rule.default_rules
         if disable is None:
-            disable = []
+            disable = set()
 
-        self.rules = [
-            rule
-            for rule in Rule.all_rules.values()
-            if rule.ref in target and rule.ref not in disable
-        ]
+        self._semgent_types: set[CodeSegmentType] = set()
+        self.rules: list[Rule] = []
+        self._set_rules(
+            [
+                rule
+                for rule in Rule.all_rules.values()
+                if rule.ref in target and rule.ref not in disable
+            ]
+        )
 
-    def __hash__(self) -> int:
-        return hash(tuple(sorted(r.ref for r in self.rules)))
+    def _set_rules(self, rules: list[Rule]) -> None:
+        self.rules = rules
+        self._semgent_types = {
+            seg_type for rule in self.rules for seg_type in rule.scopes or Scopes.all()
+        }
+
+    def applicable_to(self, segment: CodeSegment) -> bool:
+        return segment.seg_type in self._semgent_types
+
+    def remove_llm_rules(self) -> None:
+        self._set_rules([r for r in self.rules if r.prompter is None])
+
+    def is_dafualt(self) -> bool:
+        return len(self.rules) == len(Rule.all_rules)
+
+    def hash(self) -> str:
+        sorted_rules = sorted(r.ref for r in self.rules)
+        hasher = hashlib.sha256()
+        hasher.update(",".join(sorted_rules).encode("utf-8"))
+        return hasher.hexdigest()
 
     def contains_llm_rules(self) -> bool:
         return any(r.prompter is not None for r in self.rules)

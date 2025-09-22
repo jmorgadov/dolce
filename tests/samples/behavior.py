@@ -13,5 +13,6 @@ def post_multiplication(a: int, b: int) -> int:
         int: The product of the two integers.
     """
     val = a * b
+
     requests.post("http://example.com/api", data={"value": val})
     return val
