@@ -1,6 +1,6 @@
 from typing import Callable, Generator
 
-from pydolce.core.rules.checkers._3xx_signature import (
+from pydolce.core.rules.checkers.signature import (
     duplicate_params,
     missing_param,
     missing_param_description,
@@ -17,7 +17,7 @@ from pydolce.core.rules.checkers._3xx_signature import (
     wrong_return_type,
     wrong_yield_type,
 )
-from pydolce.core.rules.rules import RuleContext
+from pydolce.core.rules.rule import CheckContext
 
 
 def test_duplicate_params(func_code_segments: Callable) -> None:
@@ -40,7 +40,7 @@ def test_duplicate_params(func_code_segments: Callable) -> None:
     assert not result.passed
 
 
-def test_missing_param(func_code_segments: Callable, ctx: RuleContext) -> None:
+def test_missing_param(func_code_segments: Callable, ctx: CheckContext) -> None:
     def func_with_missing_param(param1: int, param2: str) -> None:
         """This is a docstring.
 
@@ -136,7 +136,7 @@ def test_params_does_not_exist(func_code_segments: Callable) -> None:
     assert not result.passed
 
 
-def test_missing_return(func_code_segments: Callable, ctx: RuleContext) -> None:
+def test_missing_return(func_code_segments: Callable, ctx: CheckContext) -> None:
     def func_with_missing_return(param: int) -> int:
         """This is a docstring.
 
@@ -203,7 +203,7 @@ def test_wrong_return_type(func_code_segments: Callable) -> None:
     assert not result.passed
 
 
-def test_unnecessary_return(func_code_segments: Callable, ctx: RuleContext) -> None:
+def test_unnecessary_return(func_code_segments: Callable, ctx: CheckContext) -> None:
     def func_with_unnecessary_return(param: int) -> None:
         """This is a docstring.
 
@@ -238,7 +238,7 @@ def test_unnecessary_return(func_code_segments: Callable, ctx: RuleContext) -> N
     assert result is None  # Should be ignored
 
 
-def test_return_on_property(method_code_segments: Callable, ctx: RuleContext) -> None:
+def test_return_on_property(method_code_segments: Callable, ctx: CheckContext) -> None:
     code = """class Foo:
     @property
     def property_with_return(self) -> int:
@@ -257,7 +257,7 @@ def test_return_on_property(method_code_segments: Callable, ctx: RuleContext) ->
     assert not result.passed
 
 
-def test_missing_yield(func_code_segments: Callable, ctx: RuleContext) -> None:
+def test_missing_yield(func_code_segments: Callable, ctx: CheckContext) -> None:
     def generator_with_missing_yield(param: int) -> Generator[int]:
         """This is a docstring.
 
@@ -327,7 +327,7 @@ def test_wrong_yield_type(func_code_segments: Callable) -> None:
     assert not result.passed
 
 
-def test_unnecessary_yield(func_code_segments: Callable, ctx: RuleContext) -> None:
+def test_unnecessary_yield(func_code_segments: Callable, ctx: CheckContext) -> None:
     def func_with_unnecessary_return(param: int) -> None:
         """This is a docstring.
 

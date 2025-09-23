@@ -4,7 +4,6 @@
 
 <a ref="https://pypi.org/project/pydolce/"><img src="https://img.shields.io/pypi/v/pydolce?color=blue&label=PyPI&logo=python&style=flat-square" alt="PyPI version"></a>
 
-
 **Dolce** is a tool designed to help you maintain high-quality docstrings/documentation in your Python code. In addition, it leverages Large Language Models (LLMs) to ensure that your docstrings are semantically consistent with your code.
 
 > [!NOTE]
@@ -36,13 +35,9 @@ Restyle your entire codebase docstrings to a consistent format:
   - Consistency between code and docstring
   - Detection of undocumented critical behaviors
   ... etc
-
 - **Generation docstrings**: Generate missing docstrings across your codebase (with the help of LLMs) by running a single command.
-
 - **Restyling**: Automatically restyle your existing docstrings to a consistent format (Google, NumPy, ReST, Epy, etc.).
-
 - **Cache system**: Avoid re-checking unchanged code.
-
 - **Customizable**: Easily configure which rules to apply, LLMs config (model, provider, url, etc.), and other settings via a `pyproject.toml` file.
 
 ... more features coming soon!
@@ -57,12 +52,8 @@ pip install pydolce
 
 However, the recommended use is to install it as a dev dependency in your project environment. If you are using [uv](https://docs.astral.sh/uv/) for managing your Python projects, you can add it to your `pyproject.toml` like this:
 
-```toml
-[dependency-groups]
-dev = [
-    # ... your dev dependencies
-    "pydolce",
-]
+```bash
+uv add pydolce --group dev
 ```
 
 > Don't forget to sync: `uv sync --all-groups`

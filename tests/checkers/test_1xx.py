@@ -1,13 +1,15 @@
 from typing import Callable
 
-from pydolce.core.rules.checkers._1xx_structural import (
+from pydolce.core.rules.checkers.structural import (
     missing_class_docstring,
     missing_func_docstring,
 )
-from pydolce.core.rules.rules import RuleContext
+from pydolce.core.rules.rule import CheckContext
 
 
-def test_missing_func_docstring(func_code_segments: Callable, ctx: RuleContext) -> None:
+def test_missing_func_docstring(
+    func_code_segments: Callable, ctx: CheckContext
+) -> None:
     def func_with_invalid_docstring() -> int:
         return 3
 
@@ -19,7 +21,7 @@ def test_missing_func_docstring(func_code_segments: Callable, ctx: RuleContext) 
 
 
 def test_missing_class_docstring(
-    class_code_segments: Callable, ctx: RuleContext
+    class_code_segments: Callable, ctx: CheckContext
 ) -> None:
     code_str = """
 class ClassWithNoDocstring:

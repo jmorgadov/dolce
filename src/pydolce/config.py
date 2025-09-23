@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from functools import cache, cached_property
 from pathlib import Path
 from typing import Any
 
@@ -9,7 +10,7 @@ import toml
 
 from pydolce.core.cache import CacheHandler
 from pydolce.core.parser import CodeSegmentType
-from pydolce.core.rules.rules import RuleSet
+from pydolce.types import RuleSet
 
 DEFAULT_EXCLUDES = [
     "__init__.py",
@@ -35,19 +36,19 @@ DEFAULT_SCOPES = [
 class DolceConfig:
     """Configuration for Dolce"""
 
-    # Check options
+    # Rule selection options
     target: list[str] | None = None  # Specific rules to target
     disable: list[str] | None = None  # Specific rules to disable
     exclude: list[str] | None = None
+
+    # Code segment options
     ignore_args: bool = True
     ignore_kwargs: bool = True
-    ensure_style: str | None = None  # e.g., "google", "numpy", "sphinx"
     ignore_private_functions: bool = True
     scopes: list[str] | None = None
 
-    # This are initialized after parsing pyproject.toml
-    rule_set: RuleSet | None = None
-    segment_types: set[CodeSegmentType] | None = None
+    # Docstring style options
+    ensure_style: str | None = None  # e.g., "google", "numpy", "sphinx"
 
     # LLM options
     provider: str = ""  # "ollama"
@@ -60,31 +61,29 @@ class DolceConfig:
     max_retries: int = 3
     retry_delay: float = 1.0
 
-    _cache_handler: CacheHandler | None = None
+    # This are initialized after parsing pyproject.toml
+    rule_set: RuleSet | None = None
+    # segment_types: set[CodeSegmentType] | None = None
+    # _cache_handler: CacheHandler | None = None
 
-    def get_cache_handler(self) -> CacheHandler:
+    @cached_property
+    def scopes_types(self) -> set[CodeSegmentType]:
+        """Returns the set of CodeSegmentTypes based on the current scopes."""
+        return {
+            CodeSegmentType.from_str(scope) for scope in (self.scopes or DEFAULT_SCOPES)
+        }
+
+    @cached_property
+    def segment_types(self) -> set[CodeSegmentType]:
+        """Lazily initializes and returns the set of CodeSegmentTypes based on the current scopes."""
+        return {CodeSegmentType.from_str(scope) for scope in self.scopes_types}
+
+    @cached_property
+    def cache_handler(self) -> CacheHandler:
         """Lazily initializes and returns the CacheHandler based on the current rule set."""
         if self.rule_set is None:
             raise ValueError("RuleSet must be defined to use CacheHandler.")
-        if self._cache_handler is None:
-            self._cache_handler = CacheHandler(self.rule_set)
-        return self._cache_handler
-
-    def describe(self) -> str:
-        """
-        Generates a string description of the LLM provider configuration
-
-        Returns:
-            str: A formatted string containing provider details, URL, model, and API key status
-        """
-        desc = f"Provider: {self.provider}\n"
-        desc += f"URL: {self.url}\n"
-        desc += f"Model: {self.model}\n"
-        if self.api_key:
-            desc += "API Key: [REDACTED]\n"
-        else:
-            desc += "API Key: Not Set\n"
-        return desc
+        return CacheHandler(self.rule_set)
 
     @staticmethod
     def from_pyproject() -> DolceConfig:

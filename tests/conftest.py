@@ -6,7 +6,7 @@ import pytest
 
 from pydolce.config import DolceConfig
 from pydolce.core.parser import CodeSegment, CodeSegmentType, CodeSegmentVisitor
-from pydolce.core.rules.rules import RuleContext
+from pydolce.core.rules.rule import CheckContext
 
 
 def _unindent_all_possible(code: str) -> str:
@@ -31,8 +31,8 @@ def _unindent_all_possible(code: str) -> str:
 
 
 @pytest.fixture
-def ctx() -> RuleContext:
-    return RuleContext(config=DolceConfig())
+def ctx() -> CheckContext:
+    return CheckContext(config=DolceConfig())
 
 
 @pytest.fixture

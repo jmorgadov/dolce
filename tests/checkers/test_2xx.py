@@ -1,11 +1,11 @@
 from typing import Callable
 
-from pydolce.core.rules.checkers._2xx_style import invalid_docstring_style
-from pydolce.core.rules.rules import RuleContext
+from pydolce.core.rules.checkers.style import invalid_docstring_style
+from pydolce.core.rules.rule import CheckContext
 
 
 def test_invalid_docstring_style(
-    func_code_segments: Callable, ctx: RuleContext
+    func_code_segments: Callable, ctx: CheckContext
 ) -> None:
     def func_with_invalid_docstring_style() -> int:
         """This is a docstring using numpy style.

@@ -10,7 +10,7 @@ from pydolce.core.parser import (
     CodeSegmentReport,
     DocStatus,
 )
-from pydolce.core.rules.rules import DEFAULT_PREFIX, Rule, RuleContext
+from pydolce.core.rules.rule import DEFAULT_PREFIX, CheckContext, Rule
 from pydolce.core.utils import extract_json_object
 
 
@@ -123,7 +123,7 @@ def _report_from_llm_response(
 
 
 def check_llm_rules(
-    segment: CodeSegment, ctx: RuleContext, llm: LLMClient, rules: list[Rule]
+    segment: CodeSegment, ctx: CheckContext, llm: LLMClient, rules: list[Rule]
 ) -> CodeSegmentReport:
     if any(r.prompter is None for r in rules):
         raise ValueError("All llm rules must have prompts")
@@ -168,11 +168,11 @@ def check_segment(
     segment: CodeSegment,
     config: DolceConfig,
     llm: LLMClient | None = None,
-    ctx: RuleContext | None = None,
+    ctx: CheckContext | None = None,
 ) -> CodeSegmentReport:
     assert config.rule_set is not None, "Rule set must be defined in config"
 
-    ctx = RuleContext(config=config) if ctx is None else ctx
+    ctx = CheckContext(config=config) if ctx is None else ctx
     quick_issues = config.rule_set.check(segment, ctx)
     if quick_issues:
         return CodeSegmentReport(

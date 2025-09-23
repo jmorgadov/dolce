@@ -14,7 +14,7 @@ from pydolce.core.parser import (
     DocStatus,
     code_segments_from_path,
 )
-from pydolce.core.rules.rules import RuleContext
+from pydolce.core.rules.rule import CheckContext
 
 
 def _print_summary(responses: list[CodeSegmentReport]) -> None:
@@ -48,12 +48,12 @@ def check(path: str, config: DolceConfig) -> None:
     reports: list[CodeSegmentReport] = []
 
     try:
-        handler = config.get_cache_handler()
+        handler = config.cache_handler()
     except CacheError as e:
         rich.print(f"[red][ ERROR ][/red] {e}")
         return
 
-    ctx = RuleContext(config=config)
+    ctx = CheckContext(config=config)
     for segment in code_segments_from_path(checkpath, config.exclude):
         if not config.rule_set.applicable_to(segment) or (
             config.segment_types is not None
