@@ -5,6 +5,7 @@ from pydolce.core.rules.checkers.common import CheckContext, CheckResult
 def invalid_docstring_style(
     segment: CodeSegment, ctx: CheckContext
 ) -> CheckResult | None:
+    """Docstring does not follow the specified style"""
     if not segment.doc.strip() or segment.parsed_doc is None:
         return None
 

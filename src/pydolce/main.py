@@ -5,7 +5,8 @@ import typer
 
 import pydolce
 from pydolce.config import DolceConfig
-from pydolce.core.rules.rules import Rule
+from pydolce.core.rules.rule import RuleGroup
+from pydolce.core.rules.rulesets import ALL_RULES
 
 app = typer.Typer()
 
@@ -108,39 +109,41 @@ def restyle(
 )
 def rules() -> None:
     last_group = 0
-    for rule in Rule.all_rules.values():
+    for rule in sorted(ALL_RULES, key=lambda r: r.reference):
         if rule.group != last_group:
-            rich.print(f"[bold magenta]\n{rule.group_name} rules:[/bold magenta]")
+            rich.print(
+                f"[bold magenta]\n{RuleGroup(rule.group).name.lower().capitalize()} rules:[/bold magenta]"
+            )
             last_group = rule.group
         rich.print(
-            f"[cyan][{rule.ref}][/cyan] [white]{rule.name + ' ':.<35}[/white] {rule.description}"
+            f"[cyan][{rule.reference}][/cyan] [white]{rule.name + ' ':.<35}[/white] {rule.description}"
         )
 
 
-@app.command(
-    help="Show migration mapping from pydoclint, pydocstyle, and docsig to Dolce rule references",
-)
-def migrations() -> None:
-    if not Rule.pydoclint_mig:
-        rich.print("[yellow]No pydoclint migration data available.[/yellow]")
-    else:
-        rich.print("[bold magenta]Pydoclint to Dolce migration:[/bold magenta]")
-        for pydoclint_ref, dolce_ref in Rule.pydoclint_mig.items():
-            rich.print(f"[cyan]{pydoclint_ref}[/cyan] -> [green]{dolce_ref}[/green]")
+# @app.command(
+#     help="Show migration mapping from pydoclint, pydocstyle, and docsig to Dolce rule references",
+# )
+# def migrations() -> None:
+#     if not Rule.pydoclint_mig:
+#         rich.print("[yellow]No pydoclint migration data available.[/yellow]")
+#     else:
+#         rich.print("[bold magenta]Pydoclint to Dolce migration:[/bold magenta]")
+#         for pydoclint_ref, dolce_ref in Rule.pydoclint_mig.items():
+#             rich.print(f"[cyan]{pydoclint_ref}[/cyan] -> [green]{dolce_ref}[/green]")
 
-    if not Rule.pydocstyle_mig:
-        rich.print("\n[yellow]No pydocstyle migration data available.[/yellow]")
-    else:
-        rich.print("\n[bold magenta]Pydocstyle to Dolce migration:[/bold magenta]")
-        for pydocstyle_ref, dolce_ref in Rule.pydocstyle_mig.items():
-            rich.print(f"[cyan]{dolce_ref}[/cyan] -> [green]{pydocstyle_ref}[/green]")
+#     if not Rule.pydocstyle_mig:
+#         rich.print("\n[yellow]No pydocstyle migration data available.[/yellow]")
+#     else:
+#         rich.print("\n[bold magenta]Pydocstyle to Dolce migration:[/bold magenta]")
+#         for pydocstyle_ref, dolce_ref in Rule.pydocstyle_mig.items():
+#             rich.print(f"[cyan]{dolce_ref}[/cyan] -> [green]{pydocstyle_ref}[/green]")
 
-    if not Rule.docsig_mig:
-        rich.print("\n[yellow]No docsig migration data available.[/yellow]")
-    else:
-        rich.print("\n[bold magenta]Docsig to Dolce migration:[/bold magenta]")
-        for docsig_ref, dolce_ref in Rule.docsig_mig.items():
-            rich.print(f"[cyan]{docsig_ref}[/cyan] -> [green]{dolce_ref}[/green]")
+#     if not Rule.docsig_mig:
+#         rich.print("\n[yellow]No docsig migration data available.[/yellow]")
+#     else:
+#         rich.print("\n[bold magenta]Docsig to Dolce migration:[/bold magenta]")
+#         for docsig_ref, dolce_ref in Rule.docsig_mig.items():
+#             rich.print(f"[cyan]{docsig_ref}[/cyan] -> [green]{dolce_ref}[/green]")
 
 
 @app.callback()

@@ -11,6 +11,7 @@ from docstring_parser import Docstring, ParseError, parse
 
 
 class CodeSegmentType(Enum):
+    Property = auto()
     Function = auto()
     Method = auto()
     Class = auto()
@@ -23,32 +24,6 @@ class CodeSegmentType(Enum):
             if _type.lower() == type_str:
                 return CodeSegmentType[_type]
         raise ValueError(f"Unknown CodeSegmentType string: {type_str}")
-
-
-class Scopes:
-    @staticmethod
-    def all() -> list[CodeSegmentType]:
-        return list(CodeSegmentType.__members__.values())
-
-    @staticmethod
-    def functions() -> list[CodeSegmentType]:
-        return [CodeSegmentType.Function, CodeSegmentType.Method]
-
-    @staticmethod
-    def non_method_funcs() -> list[CodeSegmentType]:
-        return [CodeSegmentType.Function]
-
-    @staticmethod
-    def methods() -> list[CodeSegmentType]:
-        return [CodeSegmentType.Method]
-
-    @staticmethod
-    def classes() -> list[CodeSegmentType]:
-        return [CodeSegmentType.Class]
-
-    @staticmethod
-    def modules() -> list[CodeSegmentType]:
-        return [CodeSegmentType.Module]
 
 
 def get_function_head(node: ast.FunctionDef) -> str:
@@ -393,11 +368,13 @@ class CodeSegmentVisitor(ast.NodeVisitor):
         elif isinstance(node, ast.ClassDef):
             segment.seg_type = CodeSegmentType.Class
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            segment.seg_type = (
-                CodeSegmentType.Method
-                if self._inside_class is not None
-                else CodeSegmentType.Function
-            )
+            if self._inside_class is None:
+                segment.seg_type = CodeSegmentType.Function
+            # Check if property
+            elif segment.is_property():
+                segment.seg_type = CodeSegmentType.Property
+            else:
+                segment.seg_type = CodeSegmentType.Method
         return segment
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:

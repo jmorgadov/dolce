@@ -10,70 +10,15 @@ from pydolce.core.parser import (
     CodeSegmentReport,
     DocStatus,
 )
-from pydolce.core.rules.rule import DEFAULT_PREFIX, CheckContext, Rule
+from pydolce.core.prompts import (
+    CHECK_SYSTEM_PROMPT_TEMPLATE,
+    CHECK_USER_PROMPT_TEMPLATE,
+)
+from pydolce.core.rules.checkers.common import CheckContext
+from pydolce.core.rules.filters import only_llm, only_static
+from pydolce.core.rules.rule import DEFAULT_PREFIX, LLMRule, Rule
+from pydolce.core.rules.rulesets import RULE_BY_REF, RULE_REFERENCES
 from pydolce.core.utils import extract_json_object
-
-
-def ruled_check_prompts(
-    function_code: str,
-    rules: list[str],
-) -> tuple[str, str]:
-    """
-    Create system and user prompts for the model to check if docstring follows the defined rules.
-
-    This will NOT check parameters, returns values, or any other section but the
-    main description of the docstring.
-
-    This will NOT check for completeness, only for CRITICAL inconsistencies.
-
-    Args:
-        function_code (str): The Python function code to analyze
-        rules (list[str]): List of rules to check, each as a string
-
-    Returns:
-        tuple[str, str]: Tuple of (system_prompt, user_prompt)
-    """
-
-    rules_str = "\n".join(rules)
-    system_prompt = """You are an expert Python docstring analyzer. Your task is to analyze if a Python function docstring follows a set of defined rules."""
-
-    system_prompt += f"""
-Analysis scopes:
-- DOCSTRING: The entire docstring, including all sections.
-- DESCRIPTION: The main description of the docstring.
-- PARAM_DESCRIPTION: The description of each parameter in the docstring.
-- RETURN_DESCRIPTION: The description of the return value in the docstring.
-- DOC_PARAM: The entire parameter section of the docstring.
-- PARAMS: The parameters in the function signature.
-- CODE: The actual code of the function.
-
-RULES TO CHECK:
-{rules_str}
-"""
-
-    system_prompt += """
-Go rule by rule, and check if the docstring violates any of them independently of the others. For each rule use only the scope information provided in the rule description to determine if the rule is violated or not.
-
-EXACT OUTPUT FORMAT IN JSON:
-
-```
-{
-    "status": "[CORRECT/INCORRECT]",
-    "issues": [List of specific rules references (DOCXXX) that were violated. Empty if status is CORRECT.]
-    "descr": [List of specific descriptions of the issues found, one per issue. No more than one sentence. Empty if status is CORRECT.]
-}
-```
-
-VERY IMPORTANT: NEVER ADD ANY EXTRA COMENTARY OR DESCRIPTION. STICK TO THE EXACT OUTPUT FORMAT.
-"""
-
-    user_prompt = f"""
-Check this code:
-```python
-{function_code.strip()}
-```
-"""
-    return system_prompt, user_prompt
 
 
 def _report_from_llm_response(
@@ -99,10 +44,10 @@ def _report_from_llm_response(
                 continue
 
             ref = ref_search[0]
-            if not Rule.is_ref_registered(ref):
+            if ref not in RULE_REFERENCES:
                 # Unknown rule reference
                 continue
-            rule_descr = Rule.all_rules[ref].description
+            rule_descr = RULE_BY_REF[ref].description
             issue_descr = (
                 json_resp["descr"][i]
                 if "descr" in json_resp and len(json_resp["descr"]) > i
@@ -125,12 +70,10 @@ def _report_from_llm_response(
 def check_llm_rules(
     segment: CodeSegment, ctx: CheckContext, llm: LLMClient, rules: list[Rule]
 ) -> CodeSegmentReport:
-    if any(r.prompter is None for r in rules):
+    if any(not isinstance(r, LLMRule) for r in rules):
         raise ValueError("All llm rules must have prompts")
 
-    filtered_rules = {
-        r: r.prompter(segment, ctx) for r in rules if r.prompter is not None
-    }
+    filtered_rules = {r: r.validator(segment, ctx) for r in rules}
 
     for key in list(filtered_rules.keys()):
         if not filtered_rules[key]:
@@ -139,10 +82,12 @@ def check_llm_rules(
     if not filtered_rules:
         return CodeSegmentReport.correct(segment)
 
-    rules_list = [f"- {rule.ref}: {prompt}" for rule, prompt in filtered_rules.items()]
-    sys_prompt, user_prompt = ruled_check_prompts(
-        function_code=segment.code_str, rules=rules_list
-    )
+    rules_list = [
+        f"- {rule.reference}: {prompt}" for rule, prompt in filtered_rules.items()
+    ]
+
+    sys_prompt = CHECK_SYSTEM_PROMPT_TEMPLATE.format(rules="\n".join(rules_list))
+    user_prompt = CHECK_USER_PROMPT_TEMPLATE.format(code=segment.code_str)
     response = llm.generate(
         prompt=user_prompt,
         system=sys_prompt,
@@ -170,21 +115,34 @@ def check_segment(
     llm: LLMClient | None = None,
     ctx: CheckContext | None = None,
 ) -> CodeSegmentReport:
-    assert config.rule_set is not None, "Rule set must be defined in config"
-
     ctx = CheckContext(config=config) if ctx is None else ctx
-    quick_issues = config.rule_set.check(segment, ctx)
-    if quick_issues:
+    issues = []
+
+    for rule in only_static(config.rule_set):
+        if rule.scopes is not None and segment.seg_type not in rule.scopes:
+            continue
+
+        result = rule.validator(segment, ctx)
+        if result is None or result.passed:
+            continue
+        if not result.issues:
+            issues.append(f"{rule.reference}: {rule.description}")
+            continue
+        for error in result.issues:
+            issues.append(f"{rule.reference}: {rule.description} ({error})")
+
+    if issues:
         return CodeSegmentReport(
             segment=segment,
             status=DocStatus.INCORRECT,
-            issues=quick_issues,
+            issues=issues,
         )
 
-    if llm is not None and segment.doc.strip():
-        desc_report = check_llm_rules(segment, ctx, llm, config.rule_set.llm_rules())
+    llm_rules = list(only_llm(config.rule_set))
 
-        if desc_report.status != DocStatus.CORRECT:
-            return desc_report
+    if llm is not None and llm_rules and segment.doc.strip():
+        llm_report = check_llm_rules(segment, ctx, llm, llm_rules)
+        if llm_report.status != DocStatus.CORRECT:
+            return llm_report
 
     return CodeSegmentReport.correct(segment)

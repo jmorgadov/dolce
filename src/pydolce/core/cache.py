@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 
 from pydolce.core.parser import CodeSegment, CodeSegmentReport, DocStatus
-from pydolce.core.rules.rules import RuleSet
+from pydolce.core.rules.rulesets import RuleSet, hash_ruleset
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +25,7 @@ class CacheHandler:
         self.project_root = self._get_project_root()
         self.cache_folder = self.project_root / ".pydolce" / "cache"
         self.cache_folder.mkdir(parents=True, exist_ok=True)
-        postfix = "" if ruleset.is_dafualt() else f"_{ruleset.hash()}"
-        self.cache_file = self.cache_folder / f"check{postfix}.json"
+        self.cache_file = self.cache_folder / f"check_{hash_ruleset(ruleset)}.json"
         self.cache_data: dict = {}
 
         self.load_cache()

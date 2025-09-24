@@ -10,6 +10,7 @@ def invalid_docstring_syntax(
     segment: CodeSegment,
     _ctx: CheckContext,
 ) -> CheckResult | None:
+    """Docstring has invalid syntax"""
     if segment.parsed_doc is None:
         return None
 
@@ -24,26 +25,31 @@ def invalid_docstring_syntax(
 def missing_module_docstring(
     segment: CodeSegment, _ctx: CheckContext
 ) -> CheckResult | None:
+    """Module has no docstring"""
     return CheckResult.check(bool(segment.doc.strip()))
 
 
 def missing_class_docstring(
     segment: CodeSegment, _ctx: CheckContext
 ) -> CheckResult | None:
+    """Class has no docstring"""
     return CheckResult.check(bool(segment.doc.strip()))
 
 
 def missing_method_docstring(
     segment: CodeSegment, _ctx: CheckContext
 ) -> CheckResult | None:
+    """Method has no docstring"""
     return CheckResult.check(bool(segment.doc.strip()))
 
 
 def missing_func_docstring(
     segment: CodeSegment, ctx: CheckContext
 ) -> CheckResult | None:
-    if ctx.config.ignore_private_functions:
-        assert isinstance(segment.code_node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    """Function has no docstring"""
+    if ctx.config.ignore_private_functions and isinstance(
+        segment.code_node, (ast.FunctionDef, ast.AsyncFunctionDef)
+    ):
         if segment.code_node.name.startswith("_"):
             return None
     return CheckResult.check(bool(segment.doc.strip()))

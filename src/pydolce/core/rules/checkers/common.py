@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Generator, Iterable
+from typing import TYPE_CHECKING, Generator, Iterable
 
-from pydolce.config import DolceConfig
+if TYPE_CHECKING:
+    from pydolce.config import DolceConfig
 
 
 @dataclass

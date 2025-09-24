@@ -14,7 +14,10 @@ from pydolce.core.parser import (
     DocStatus,
     code_segments_from_path,
 )
-from pydolce.core.rules.rule import CheckContext
+from pydolce.core.rules.checkers.common import CheckContext
+from pydolce.core.rules.rule import LLMRule
+
+# from pydolce.core.rules.rule import CheckContext
 
 
 def _print_summary(responses: list[CodeSegmentReport]) -> None:
@@ -36,31 +39,24 @@ def check(path: str, config: DolceConfig) -> None:
     assert config.rule_set is not None
 
     llm = None
-    if config.url and config.rule_set.contains_llm_rules():
+    if config.url and any(
+        isinstance(rule, LLMRule) is not None for rule in config.rule_set
+    ):
         llm = LLMClient.from_dolce_config(config)
         if not llm.test_connection():
             rich.print("[red]✗ Connection failed[/red]")
             return
 
-    if not config.url:
-        config.rule_set.remove_llm_rules()
-
     reports: list[CodeSegmentReport] = []
 
     try:
-        handler = config.cache_handler()
+        handler = config.cache_handler
     except CacheError as e:
         rich.print(f"[red][ ERROR ][/red] {e}")
         return
 
     ctx = CheckContext(config=config)
     for segment in code_segments_from_path(checkpath, config.exclude):
-        if not config.rule_set.applicable_to(segment) or (
-            config.segment_types is not None
-            and segment.seg_type not in config.segment_types
-        ):
-            continue
-
         loc = f"[blue]{segment.code_path}[/blue]"
         rich.print(f"[white]\\[  ...  ][/white] [blue]{loc}[/blue]", end="\r")
 

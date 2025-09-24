@@ -1,6 +1,7 @@
 from typing import Iterable
 
-from pydolce.types import RuleSet
+from pydolce.core.rules.rule import LLMRule, StaticRule
+from pydolce.core.rules.rulesets import RuleSet
 
 
 def only(references: Iterable[str], rs: RuleSet) -> RuleSet:
@@ -15,14 +16,14 @@ def exclude(references: Iterable[str], rs: RuleSet) -> RuleSet:
     return filter(lambda r: r.reference not in refs, rs)
 
 
-def without_llm(rs: RuleSet) -> RuleSet:
+def only_static(rs: RuleSet) -> RuleSet:
     """Filter rules to only include static rules (non-LLM)."""
-    return filter(lambda r: r.checker is not None, rs)
+    return filter(lambda r: isinstance(r, StaticRule), rs)
 
 
 def only_llm(rs: RuleSet) -> RuleSet:
     """Filter rules to only include LLM-based rules."""
-    return filter(lambda r: r.prompter is not None, rs)
+    return filter(lambda r: isinstance(r, LLMRule), rs)
 
 
 def only_from_groups(groups: Iterable[int], rs: RuleSet) -> RuleSet:
