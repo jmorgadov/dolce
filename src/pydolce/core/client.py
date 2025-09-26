@@ -19,6 +19,7 @@ class ProviderType(Enum):
     ANTHROPIC = "anthropic"
     GROQ = "groq"
     TOGETHER = "together"
+    GEMINI = "gemini"
     GENERIC_OPENAI = "generic_openai"  # For any OpenAI-compatible API
 
 
@@ -89,6 +90,8 @@ class LLMClient:
             return ProviderType.GROQ
         elif "api.together.xyz" in url:
             return ProviderType.TOGETHER
+        elif "generativelanguage.googleapis.com" in url:
+            return ProviderType.GEMINI
         else:
             return ProviderType.GENERIC_OPENAI  # Assume OpenAI-compatible
 
@@ -100,6 +103,8 @@ class LLMClient:
             if self.provider == ProviderType.ANTHROPIC:
                 headers["x-api-key"] = self.config.api_key
                 headers["anthropic-version"] = "2023-06-01"
+            elif self.provider == ProviderType.GEMINI:
+                headers["x-goog-api-key"] = self.config.api_key
             else:
                 headers["Authorization"] = f"Bearer {self.config.api_key}"
 
@@ -113,6 +118,8 @@ class LLMClient:
                     return self._ollama_generate(prompt, **kwargs)
                 elif self.provider == ProviderType.ANTHROPIC:
                     return self._anthropic_generate(prompt, **kwargs)
+                elif self.provider == ProviderType.GEMINI:
+                    return self._gemini_generate(prompt, **kwargs)
                 else:
                     # OpenAI-compatible (covers OpenAI, Groq, Together, etc.)
                     return self._openai_generate(prompt, **kwargs)
@@ -127,6 +134,33 @@ class LLMClient:
                     self.config.retry_delay * (2**attempt)
                 )  # Exponential backoff
         raise LLMError("Unreachable code reached in generate()")
+
+    def _gemini_generate(self, prompt: str, **kwargs: Any) -> str:
+        """Generate using Gemini API"""
+        if "system" in kwargs:
+            prompt = f"{kwargs['system']}\n\n{prompt}"
+        data = {
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [{"text": prompt}],
+                },
+            ],
+            "generationConfig": {
+                "temperature": kwargs.get("temperature", self.config.temperature),
+            },
+        }
+
+        response = requests.post(
+            f"{self.config.base_url}/v1beta/models/{self.config.model}:generateContent",
+            headers=self.headers,
+            json=data,
+            timeout=self.config.timeout,
+        )
+        response.raise_for_status()
+
+        result = response.json()
+        return result["candidates"][0]["content"]["parts"][0]["text"]
 
     def _ollama_generate(self, prompt: str, **kwargs: Any) -> str:
         """Generate using Ollama API"""
@@ -227,6 +261,16 @@ class LLMClient:
                 response.raise_for_status()
                 models = response.json().get("models", [])
                 return [model["name"] for model in models]
+            if self.provider == ProviderType.GEMINI:
+                response = requests.get(
+                    f"{self.config.base_url}/v1beta/models",
+                    headers=self.headers,
+                    timeout=self.config.timeout,
+                )
+                response.raise_for_status()
+                models = response.json().get("models", [])
+                return [model["name"] for model in models]
+
             else:
                 response = requests.get(
                     f"{self.config.base_url}/models",
@@ -245,6 +289,13 @@ class LLMClient:
         try:
             if self.provider == ProviderType.OLLAMA:
                 response = requests.get(f"{self.config.base_url}/api/tags", timeout=5)
+                return response.status_code == 200
+            elif self.provider == ProviderType.GEMINI:
+                response = requests.get(
+                    f"{self.config.base_url}/v1beta/models",
+                    headers=self.headers,
+                    timeout=5,
+                )
                 return response.status_code == 200
             else:
                 test_prompt = "Hi"
