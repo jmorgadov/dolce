@@ -5,7 +5,9 @@ import json
 import logging
 from pathlib import Path
 
-from pydolce.core.parser import CodeSegment, CodeSegmentReport, DocStatus
+from pydolce.core.parser import CodeSegment
+from pydolce.core.rules.checkers.common import CheckResult, CheckStatus
+from pydolce.core.rules.rule import Rule
 from pydolce.core.rules.rulesets import RuleSet, hash_ruleset
 
 logger = logging.getLogger(__name__)
@@ -64,40 +66,45 @@ class CacheHandler:
     def _get_key(self, segment: CodeSegment) -> str:
         hasher = hashlib.sha256()
         hasher.update(segment.code_str.encode("utf-8"))
-        hasher.update(str(segment.file_path).encode("utf-8"))
-        hasher.update(str(segment.lineno).encode("utf-8"))
-        hasher.update(segment.seg_type.name.encode("utf-8"))
         return hasher.hexdigest()
 
-    def get_check(self, segment: CodeSegment) -> CodeSegmentReport | None:
+    def get_check(self, segment: CodeSegment, rule: Rule) -> list[CheckResult] | None:
         key = self._get_key(segment)
 
-        if key in self.cache_data:
-            report = self.cache_data[key]
-            return CodeSegmentReport(
-                segment=segment,
-                status=DocStatus.from_str(report["status"]),
-                issues=report.get("issues", []),
-            )
+        cache = self.cache_data.get(key, {})
+        cache = cache.get(rule.reference, {})
 
-        return None
+        if not cache:
+            return None
+
+        return [
+            CheckResult(
+                status=CheckStatus.from_str(entry["status"]),
+                issue=entry["issue"],
+            )
+            for entry in cache
+        ]
 
     def set_check(
         self,
         segment: CodeSegment,
-        report: CodeSegmentReport,
+        rule: Rule,
+        report: list[CheckResult],
         sync: bool = False,
         override: bool = True,
     ) -> None:
         key = self._get_key(segment)
         if not override and key in self.cache_data:
             raise ValueError("Cache entry already exists and override is False")
-        self.cache_data[key] = {
-            "file": str(segment.code_path),
-            "lineno": segment.lineno,
-            "status": report.status.value,
-            "issues": report.issues,
-        }
+        if key not in self.cache_data:
+            self.cache_data[key] = {}
 
+        self.cache_data[key][rule.reference] = [
+            {
+                "status": result.status.value,
+                "issue": result.issue,
+            }
+            for result in report
+        ]
         if sync:
             self.sync_cache()

@@ -18,9 +18,9 @@ EXACT OUTPUT FORMAT IN JSON:
 
 ```
 {{
-    "status": "[CORRECT/INCORRECT]",
-    "issues": [List of specific rules references (DOCXXX) that were violated. Empty if status is CORRECT.]
-    "descr": [List of specific descriptions of the issues found, one per issue. No more than one sentence. Empty if status is CORRECT.]
+    "status": "[GOOD/BAD]",
+    "issues": [List of specific rules references (DOCXXX) that were violated. Empty if status is GOOD.]
+    "descr": [List of specific descriptions of the issues found, one per issue. No more than one sentence. Empty if status is GOOD.]
 }}
 ```
 

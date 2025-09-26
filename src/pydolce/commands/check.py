@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections import Counter
 from pathlib import Path
-from typing import Counter
 
 import rich
 
@@ -10,32 +10,42 @@ from pydolce.core.check import check_segment
 from pydolce.core.client import LLMClient
 from pydolce.core.errors import CacheError
 from pydolce.core.parser import (
-    CodeSegmentReport,
-    DocStatus,
     code_segments_from_path,
 )
-from pydolce.core.rules.checkers.common import CheckContext
-from pydolce.core.rules.rule import LLMRule
-
-# from pydolce.core.rules.rule import CheckContext
+from pydolce.core.rules.checkers.common import CheckContext, CheckResult, CheckStatus
+from pydolce.core.rules.rule import LLMRule, Rule
 
 
-def _print_summary(responses: list[CodeSegmentReport]) -> None:
-    statuses_count = Counter(resp.status for resp in responses)
+def _print_summary(report: dict[Rule, list[CheckResult]]) -> None:
+    if not report:
+        rich.print("\n[bold]No code segments were checked.[/bold]")
+        return
+
+    good, bad = 0, 0
+    for issues in report.values():
+        if any(issue.status == CheckStatus.BAD for issue in issues):
+            bad += 1
+        else:
+            good += 1
     rich.print("\n[bold]Summary:[/bold]")
-    if DocStatus.CORRECT in statuses_count:
-        rich.print(f"[green]✓ Correct: {statuses_count[DocStatus.CORRECT]}[/green]")
-    if DocStatus.INCORRECT in statuses_count:
-        rich.print(f"[red]✗ Incorrect: {statuses_count[DocStatus.INCORRECT]}[/red]")
+    rich.print(f"[green]✓ Correct: {good}[/green]")
+    rich.print(f"[red]✗ Incorrect: {bad}[/red]")
 
 
-def _print_report_issues(report: CodeSegmentReport) -> None:
-    for issue in report.issues:
-        rich.print(f"[red]  - {issue}[/red]")
+def _print_report_issues(report: dict[Rule, list[CheckResult]]) -> None:
+    for rule, results in report.items():
+        for result in results:
+            issue = result.issue
+            line = f"{rule.reference}: {rule.description}"
+            if issue:
+                line += f" ({issue})"
+            if result.status == CheckStatus.BAD:
+                rich.print(f"[red]  - {line}[/red]")
+            elif result.status == CheckStatus.UNKNOWN:
+                rich.print(f"[yellow]  - {line}[/yellow]")
 
 
 def check(path: str, config: DolceConfig) -> None:
-    checkpath = Path(path)
     assert config.rule_set is not None
 
     llm = None
@@ -47,40 +57,39 @@ def check(path: str, config: DolceConfig) -> None:
             rich.print("[red]✗ Connection failed[/red]")
             return
 
-    reports: list[CodeSegmentReport] = []
-
-    try:
-        handler = config.cache_handler
-    except CacheError as e:
-        rich.print(f"[red][ ERROR ][/red] {e}")
-        return
-
     ctx = CheckContext(config=config)
-    for segment in code_segments_from_path(checkpath, config.exclude):
+    total = 0
+    bad = 0
+    unknown = 0
+    for segment in code_segments_from_path(path, config.exclude):
+        total += 1
         loc = f"[blue]{segment.code_path}[/blue]"
         rich.print(f"[white]\\[  ...  ][/white] [blue]{loc}[/blue]", end="\r")
 
-        report = handler.get_check(segment) or check_segment(segment, config, llm, ctx)
-        handler.set_check(
-            segment, report, sync=llm is not None
-        )  # Sync every time if LLM is used
+        report = check_segment(segment, config, llm, ctx)
 
-        if report.status == DocStatus.INCORRECT:
-            rich.print(f"[red][ ERROR ][/red] {loc}")
-            _print_report_issues(report)
+        statuses = Counter(r.status for rep in report.values() for r in rep)
 
-        elif report.status == DocStatus.UNKNOWN:
-            rich.print(f"[yellow][  INV  ][/yellow] {loc}")
-            for issues in report.issues:
-                rich.print(f"[yellow]  - {issues}[/yellow]")
-        else:
+        if statuses.get(CheckStatus.GOOD, 0) == sum(statuses.values()):
             rich.print(f"[green][  OK   ][/green] {loc}")
+            continue
 
-        reports.append(report)
+        if statuses.get(CheckStatus.BAD, 0):
+            rich.print(f"[red][ ERROR ][/red] {loc}")
+            bad += 1
+        if statuses.get(CheckStatus.UNKNOWN, 0):
+            rich.print(f"[yellow][  ???  ][/yellow] {loc}")
+            unknown += 1
+        _print_report_issues(report)
 
-    handler.sync_cache()
+    if total:
+        rich.print("\n[bold]Summary:[/bold]")
+        if unknown:
+            rich.print(f"[yellow]✓ Unkown: {unknown}[/yellow]")
+        if bad:
+            rich.print(f"[red]✗ Incorrect: {bad}[/red]")
+        if not bad and not unknown:
+            rich.print("[green]✓ All correct[/green]")
 
-    _print_summary(reports)
-
-    if any(report.status == DocStatus.INCORRECT for report in reports):
+    if bad:
         raise SystemExit(1)

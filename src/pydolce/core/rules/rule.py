@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import Callable
+from typing import Generator
 
-from pydolce.core.parser import CodeSegmentType
+from pydolce.core.parser import CodeSegment, CodeSegmentType
+from pydolce.core.rules.checkers.common import CheckContext, CheckResult
 from pydolce.types import LLMRulePrompter, RuleChecker
 
 DEFAULT_PREFIX = "DCE"
@@ -21,7 +22,7 @@ class Rule:
     def __init__(
         self,
         code: int,
-        validator: Callable,
+        validator: RuleChecker | LLMRulePrompter,
         scopes: list[CodeSegmentType] | None = None,
     ):
         self.code = code
@@ -60,6 +61,11 @@ class StaticRule(Rule):
     ):
         super().__init__(code, checker, scopes)
 
+    def check(self, segment: CodeSegment, ctx: CheckContext) -> Generator[CheckResult]:
+        result = self.validator(segment, ctx)
+        assert isinstance(result, Generator)
+        yield from result
+
 
 class LLMRule(Rule):
     def __init__(
@@ -69,3 +75,8 @@ class LLMRule(Rule):
         scopes: list[CodeSegmentType] | None = None,
     ):
         super().__init__(code, prompter, scopes)
+
+    def prompt(self, segment: CodeSegment, ctx: CheckContext) -> str | None:
+        result = self.validator(segment, ctx)
+        assert result is None or isinstance(result, str)
+        return result

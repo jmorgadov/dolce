@@ -1,3 +1,5 @@
+from typing import Generator
+
 from pydolce.core.parser import CodeSegment
 from pydolce.core.rules.checkers.common import CheckContext, CheckResult
 
@@ -8,10 +10,10 @@ from pydolce.core.rules.checkers.common import CheckContext, CheckResult
 # ----------------------------------------------------------------
 
 
-def missing_param(segment: CodeSegment, ctx: CheckContext) -> CheckResult | None:
+def missing_param(segment: CodeSegment, ctx: CheckContext) -> Generator[CheckResult]:
     """Function parameter is not documented"""
     if not segment.doc or segment.parsed_doc is None:
-        return None
+        return
 
     func_params = list(segment.params.keys()) if segment.params else []
     if "self" in func_params:
@@ -23,32 +25,36 @@ def missing_param(segment: CodeSegment, ctx: CheckContext) -> CheckResult | None
         func_params.append(segment.kwargs_name)
 
     if not func_params:
-        return CheckResult.good()
+        yield CheckResult.good()
 
     documented_params = {param.arg_name for param in segment.parsed_doc.params}
-    return CheckResult.bad_if_any(
+    yield from CheckResult.from_issues(
         f"Parameter '{p_name}' is not documented."
         for p_name in func_params
         if p_name not in documented_params
     )
 
 
-def missing_param_type(segment: CodeSegment, _ctx: CheckContext) -> CheckResult | None:
+def missing_param_type(
+    segment: CodeSegment, _ctx: CheckContext
+) -> Generator[CheckResult]:
     """Function parameter is missing type in the docstring"""
     if not segment.params or segment.parsed_doc is None or not segment.doc:
-        return None
+        return
 
-    return CheckResult.bad_if_any(
+    yield from CheckResult.from_issues(
         f"Parameter '{p.arg_name}' is missing a type in the docstring."
         for p in segment.parsed_doc.params
         if p.type_name is None
     )
 
 
-def wrong_param_type(segment: CodeSegment, _ctx: CheckContext) -> CheckResult | None:
+def wrong_param_type(
+    segment: CodeSegment, _ctx: CheckContext
+) -> Generator[CheckResult]:
     """Function parameter has a different type documented"""
     if segment.params is None or not segment.params or segment.parsed_doc is None:
-        return None
+        return
 
     errors = []
     for param in segment.parsed_doc.params:
@@ -73,17 +79,17 @@ def wrong_param_type(segment: CodeSegment, _ctx: CheckContext) -> CheckResult | 
                 f"Parameter '{p_name}' has type '{sig_type}' in signature but '{p_type}' in docstring."
             )
 
-    return CheckResult.bad_if_any(errors)
+    yield from CheckResult.from_issues(errors)
 
 
 def missing_param_description(
     segment: CodeSegment, _ctx: CheckContext
-) -> CheckResult | None:
+) -> Generator[CheckResult]:
     """Function parameter is missing description in the docstring"""
     if not segment.doc or segment.parsed_doc is None:
-        return None
+        return
 
-    return CheckResult.bad_if_any(
+    yield from CheckResult.from_issues(
         f"Parameter '{param.arg_name}' is missing a description."
         for param in segment.parsed_doc.params
         if param.description is None or not param.description.strip()
@@ -92,7 +98,7 @@ def missing_param_description(
 
 def params_does_not_exist(
     segment: CodeSegment, _ctx: CheckContext
-) -> CheckResult | None:
+) -> Generator[CheckResult]:
     """Function parameter is documented but does not exist in the signature"""
     if (
         segment.params is None
@@ -100,19 +106,21 @@ def params_does_not_exist(
         or segment.parsed_doc is None
         or not segment.doc
     ):
-        return None
+        return
 
-    return CheckResult.bad_if_any(
+    yield from CheckResult.from_issues(
         f"Parameter '{param.arg_name}' documented but not in signature."
         for param in segment.parsed_doc.params
         if param.arg_name not in segment.params
     )
 
 
-def duplicate_params(segment: CodeSegment, _ctx: CheckContext) -> CheckResult | None:
+def duplicate_params(
+    segment: CodeSegment, _ctx: CheckContext
+) -> Generator[CheckResult]:
     """Function parameter is documented multiple times in the docstring"""
     if segment.parsed_doc is None:
-        return None
+        return
 
     errors = []
     checked_params = set()
@@ -126,7 +134,7 @@ def duplicate_params(segment: CodeSegment, _ctx: CheckContext) -> CheckResult | 
 
         checked_params.add(p_name)
 
-    return CheckResult.bad_if_any(errors)
+    yield from CheckResult.from_issues(errors)
 
 
 # ----------------------------------------------------------------
@@ -136,24 +144,24 @@ def duplicate_params(segment: CodeSegment, _ctx: CheckContext) -> CheckResult | 
 # ----------------------------------------------------------------
 
 
-def missing_return(segment: CodeSegment, _ctx: CheckContext) -> CheckResult | None:
+def missing_return(segment: CodeSegment, _ctx: CheckContext) -> Generator[CheckResult]:
     """Function return is not documented"""
     if segment.parsed_doc is None or not segment.doc or segment.is_generator:
-        return None
+        return
 
     if segment.returns is not None and segment.returns == "None":
-        return CheckResult.good()
+        yield CheckResult.good()
 
     # Properties do not need return sections
     if segment.is_property():
-        return CheckResult.good()
+        yield CheckResult.good()
 
-    return CheckResult.check(segment.parsed_doc.returns is not None)
+    yield CheckResult.check(segment.parsed_doc.returns is not None)
 
 
 def missing_return_description(
     segment: CodeSegment, _ctx: CheckContext
-) -> CheckResult | None:
+) -> Generator[CheckResult]:
     """Function return is missing description in the docstring"""
     if (
         segment.parsed_doc is None
@@ -162,15 +170,17 @@ def missing_return_description(
         or segment.is_generator
         or not segment.has_return_doc
     ):
-        return None
+        return
 
     ret = segment.parsed_doc.returns
-    return CheckResult.check(
+    yield CheckResult.check(
         ret.description is not None and ret.description.strip() != ""
     )
 
 
-def wrong_return_type(segment: CodeSegment, _ctx: CheckContext) -> CheckResult | None:
+def wrong_return_type(
+    segment: CodeSegment, _ctx: CheckContext
+) -> Generator[CheckResult]:
     """Function return has a different type documented"""
     if (
         segment.real_return_type is None
@@ -180,32 +190,36 @@ def wrong_return_type(segment: CodeSegment, _ctx: CheckContext) -> CheckResult |
         or segment.parsed_doc.returns.is_generator
         or segment.is_generator
     ):
-        return None
+        return
 
-    return CheckResult.check(
+    yield CheckResult.check(
         segment.real_return_type == segment.doc_return_type,
         f"Return type is '{segment.real_return_type}' but declared '{segment.doc_return_type}' in docstring.",
     )
 
 
-def unnecessary_return(segment: CodeSegment, _ctx: CheckContext) -> CheckResult | None:
+def unnecessary_return(
+    segment: CodeSegment, _ctx: CheckContext
+) -> Generator[CheckResult]:
     """Function has return documented but does not return anything"""
     if (
         segment.doc_return_type is None
         or not segment.has_return_doc
         or segment.is_generator
     ):
-        return None
+        return
 
-    return CheckResult.check(segment.returns != "None")
+    yield CheckResult.check(segment.returns != "None")
 
 
-def return_on_property(segment: CodeSegment, _ctx: CheckContext) -> CheckResult | None:
+def return_on_property(
+    segment: CodeSegment, _ctx: CheckContext
+) -> Generator[CheckResult]:
     """Property has return section documented"""
     if segment.parsed_doc is None or not segment.has_return_doc:
-        return None
+        return
 
-    return CheckResult.check(
+    yield CheckResult.check(
         not segment.is_property(), "Properties should not have return sections."
     )
 
@@ -217,16 +231,16 @@ def return_on_property(segment: CodeSegment, _ctx: CheckContext) -> CheckResult 
 # ----------------------------------------------------------------
 
 
-def missing_yield(segment: CodeSegment, _ctx: CheckContext) -> CheckResult | None:
+def missing_yield(segment: CodeSegment, _ctx: CheckContext) -> Generator[CheckResult]:
     """Function yield is not documented"""
     if (
         segment.real_return_type is None
         or segment.parsed_doc is None
         or not segment.is_generator
     ):
-        return None
+        return
 
-    return CheckResult.check(
+    yield CheckResult.check(
         not segment.is_generator
         or (
             segment.parsed_doc.returns is not None
@@ -237,7 +251,7 @@ def missing_yield(segment: CodeSegment, _ctx: CheckContext) -> CheckResult | Non
 
 def missing_yield_description(
     segment: CodeSegment, _ctx: CheckContext
-) -> CheckResult | None:
+) -> Generator[CheckResult]:
     """Function yield is missing description in the docstring"""
     if (
         segment.parsed_doc is None
@@ -245,15 +259,17 @@ def missing_yield_description(
         or segment.parsed_doc.returns is None
         or not segment.parsed_doc.returns.is_generator
     ):
-        return None
+        return
 
     ret = segment.parsed_doc.returns
-    return CheckResult.check(
+    yield CheckResult.check(
         ret.description is not None and ret.description.strip() != ""
     )
 
 
-def wrong_yield_type(segment: CodeSegment, _ctx: CheckContext) -> CheckResult | None:
+def wrong_yield_type(
+    segment: CodeSegment, _ctx: CheckContext
+) -> Generator[CheckResult]:
     """Function yield has a different type documented"""
     if (
         segment.real_return_type is None
@@ -265,14 +281,16 @@ def wrong_yield_type(segment: CodeSegment, _ctx: CheckContext) -> CheckResult | 
             segment.is_generator and segment.generator_type is None
         )  # No type specified
     ):
-        return None
+        return
 
-    return CheckResult.check(
+    yield CheckResult.check(
         segment.generator_type == segment.parsed_doc.returns.type_name,
         f"Yield type is '{segment.generator_type}' but declared '{segment.parsed_doc.returns.type_name}' in docstring.",
     )
 
 
-def unnecessary_yield(segment: CodeSegment, _ctx: CheckContext) -> CheckResult | None:
+def unnecessary_yield(
+    segment: CodeSegment, _ctx: CheckContext
+) -> Generator[CheckResult]:
     """Function has yield documented but is not a generator"""
-    return CheckResult.check(not segment.has_yield_doc or segment.is_generator)
+    yield CheckResult.check(not segment.has_yield_doc or segment.is_generator)

@@ -513,51 +513,6 @@ class CodeSegment:
         )
 
 
-class DocStatus(Enum):
-    CORRECT = "CORRECT"
-    INCORRECT = "INCORRECT"
-    UNKNOWN = "UNKNOWN"
-
-    @staticmethod
-    def from_str(status_str: str) -> DocStatus:
-        status_str = status_str.upper()
-        if status_str == "CORRECT":
-            return DocStatus.CORRECT
-        elif status_str == "INCORRECT":
-            return DocStatus.INCORRECT
-        elif status_str == "UNKNOWN":
-            return DocStatus.UNKNOWN
-        else:
-            raise ValueError(f"Unknown DocStatus string: {status_str}")
-
-
-@dataclass
-class CodeSegmentReport:
-    status: DocStatus
-    issues: list[str]
-    segment: CodeSegment
-
-    @staticmethod
-    def correct(segment: CodeSegment) -> CodeSegmentReport:
-        return CodeSegmentReport(status=DocStatus.CORRECT, issues=[], segment=segment)
-
-    @staticmethod
-    def unknown(
-        segment: CodeSegment, issues: list[str] | None = None
-    ) -> CodeSegmentReport:
-        return CodeSegmentReport(
-            status=DocStatus.UNKNOWN, issues=issues or [], segment=segment
-        )
-
-    @staticmethod
-    def incorrect(
-        segment: CodeSegment, issues: list[str] | None = None
-    ) -> CodeSegmentReport:
-        return CodeSegmentReport(
-            status=DocStatus.INCORRECT, issues=issues or [], segment=segment
-        )
-
-
 def _parse_file(filepath: Path) -> list[CodeSegment]:
     code = filepath.read_text()
     visitor = CodeSegmentVisitor(filepath)
