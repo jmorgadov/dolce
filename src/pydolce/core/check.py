@@ -4,7 +4,6 @@ import json
 import logging
 import re
 
-from pydolce.config import DolceConfig
 from pydolce.core.client import LLMClient
 from pydolce.core.parser import (
     CodeSegment,
@@ -16,7 +15,7 @@ from pydolce.core.prompts import (
 from pydolce.core.rules.checkers.common import CheckContext, CheckResult, CheckStatus
 from pydolce.core.rules.filters import only_llm, only_static
 from pydolce.core.rules.rule import DEFAULT_PREFIX, LLMRule, Rule, StaticRule
-from pydolce.core.rules.rulesets import RULE_BY_REF, RULE_REFERENCES
+from pydolce.core.rules.rulesets import RULE_BY_REF, RULE_REFERENCES, RuleSet
 from pydolce.core.utils import extract_json_object
 
 logger = logging.getLogger(__name__)
@@ -123,33 +122,17 @@ def check_llm_rules(
 
 def check_segment(
     segment: CodeSegment,
-    config: DolceConfig,
+    rules: RuleSet,
+    ctx: CheckContext,
     llm: LLMClient | None = None,
-    ctx: CheckContext | None = None,
 ) -> dict[Rule, list[CheckResult]]:
-    ctx = CheckContext(config=config) if ctx is None else ctx
-
-    handler = None
-    try:
-        handler = config.cache_handler
-    except Exception as e:
-        logger.debug("Not using cache handler: %s", e)
-        pass
-
     report: dict[Rule, list[CheckResult]] = {}
 
-    for rule in only_static(config.rule_set):
+    for rule in only_static(rules):
         if rule.scopes is not None and segment.seg_type not in rule.scopes:
             continue
 
         assert isinstance(rule, StaticRule)
-        if (
-            handler is not None
-            and (cached_result := handler.get_check(segment, rule)) is not None
-        ):
-            report.update({rule: cached_result})
-            continue
-
         results = list(rule.check(segment, ctx))
 
         if not results:
@@ -157,36 +140,13 @@ def check_segment(
 
         report.update({rule: list(results)})
 
-        if handler is not None:
-            handler.set_check(segment, rule, results, sync=True, override=True)
-
     if llm is None:
         return report
 
-    llm_rules = list(only_llm(config.rule_set))
-    llm_rules_to_check: list[Rule] = []
+    llm_rules = list(only_llm(rules))
 
-    if handler is not None:
-        for rule in llm_rules:
-            if rule.scopes is not None and segment.seg_type not in rule.scopes:
-                continue
-            assert isinstance(rule, LLMRule)
-            if (cached_result := handler.get_check(segment, rule)) is not None:
-                report.update({rule: cached_result})
-                continue
-
-            llm_rules_to_check.append(rule)
-    else:
-        llm_rules_to_check = llm_rules
-
-    if llm_rules_to_check and segment.doc.strip():
-        llm_report = check_llm_rules(segment, ctx, llm, llm_rules_to_check)
+    if llm_rules and segment.doc.strip():
+        llm_report = check_llm_rules(segment, ctx, llm, llm_rules)
         if llm_report is not None:
             report.update(llm_report)
-
-    if handler is not None:
-        for rule, rule_report in report.items():
-            if rule in llm_rules_to_check:
-                handler.set_check(segment, rule, rule_report, sync=True, override=True)
-
     return report

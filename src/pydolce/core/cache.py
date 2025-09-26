@@ -8,7 +8,7 @@ from pathlib import Path
 from pydolce.core.parser import CodeSegment
 from pydolce.core.rules.checkers.common import CheckResult, CheckStatus
 from pydolce.core.rules.rule import Rule
-from pydolce.core.rules.rulesets import RuleSet, hash_ruleset
+from pydolce.core.rules.rulesets import RULE_BY_REF
 
 logger = logging.getLogger(__name__)
 
@@ -23,11 +23,11 @@ PROJECT_ROOT_INDICATORS = [
 
 
 class CacheHandler:
-    def __init__(self, ruleset: RuleSet) -> None:
+    def __init__(self) -> None:
         self.project_root = self._get_project_root()
         self.cache_folder = self.project_root / ".pydolce" / "cache"
         self.cache_folder.mkdir(parents=True, exist_ok=True)
-        self.cache_file = self.cache_folder / f"check_{hash_ruleset(ruleset)}.json"
+        self.cache_file = self.cache_folder / "check_cache.json"
         self.cache_data: dict = {}
 
         self.load_cache()
@@ -66,30 +66,32 @@ class CacheHandler:
     def _get_key(self, segment: CodeSegment) -> str:
         hasher = hashlib.sha256()
         hasher.update(segment.code_str.encode("utf-8"))
+        hasher.update(segment.seg_type.name.encode("utf-8"))
         return hasher.hexdigest()
 
-    def get_check(self, segment: CodeSegment, rule: Rule) -> list[CheckResult] | None:
+    def get_report(self, segment: CodeSegment) -> dict[Rule, list[CheckResult]]:
         key = self._get_key(segment)
 
         cache = self.cache_data.get(key, {})
-        cache = cache.get(rule.reference, {})
 
         if not cache:
-            return None
+            return {}
 
-        return [
-            CheckResult(
-                status=CheckStatus.from_str(entry["status"]),
-                issue=entry["issue"],
-            )
-            for entry in cache
-        ]
+        return {
+            RULE_BY_REF[rule_ref]: [
+                CheckResult(
+                    status=CheckStatus.from_str(status),
+                    issue=issue,
+                )
+                for status, issue in [entry.split("::") for entry in entries]
+            ]
+            for rule_ref, entries in cache.items()
+        }
 
-    def set_check(
+    def set_report(
         self,
         segment: CodeSegment,
-        rule: Rule,
-        report: list[CheckResult],
+        report: dict[Rule, list[CheckResult]],
         sync: bool = False,
         override: bool = True,
     ) -> None:
@@ -99,12 +101,11 @@ class CacheHandler:
         if key not in self.cache_data:
             self.cache_data[key] = {}
 
-        self.cache_data[key][rule.reference] = [
-            {
-                "status": result.status.value,
-                "issue": result.issue,
-            }
-            for result in report
-        ]
+        for rule, results in report.items():
+            results_str = [
+                f"{result.status.value}::{result.issue}" for result in results
+            ]
+            self.cache_data[key][rule.reference] = results_str
+
         if sync:
             self.sync_cache()

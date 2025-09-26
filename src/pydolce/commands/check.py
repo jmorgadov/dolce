@@ -1,19 +1,20 @@
 from __future__ import annotations
 
+import logging
 from collections import Counter
-from pathlib import Path
 
 import rich
 
 from pydolce.config import DolceConfig
 from pydolce.core.check import check_segment
 from pydolce.core.client import LLMClient
-from pydolce.core.errors import CacheError
 from pydolce.core.parser import (
     code_segments_from_path,
 )
 from pydolce.core.rules.checkers.common import CheckContext, CheckResult, CheckStatus
 from pydolce.core.rules.rule import LLMRule, Rule
+
+logger = logging.getLogger(__name__)
 
 
 def _print_summary(report: dict[Rule, list[CheckResult]]) -> None:
@@ -46,27 +47,46 @@ def _print_report_issues(report: dict[Rule, list[CheckResult]]) -> None:
 
 
 def check(path: str, config: DolceConfig) -> None:
-    assert config.rule_set is not None
-
     llm = None
-    if config.url and any(
-        isinstance(rule, LLMRule) is not None for rule in config.rule_set
-    ):
+    if config.url and any(isinstance(rule, LLMRule) for rule in config.rule_set):
         llm = LLMClient.from_dolce_config(config)
         if not llm.test_connection():
-            rich.print("[red]✗ Connection failed[/red]")
+            rich.print("[red]✗ LLM connection failed[/red]")
             return
 
     ctx = CheckContext(config=config)
-    total = 0
     bad = 0
     unknown = 0
+
+    handler = None
+    try:
+        handler = config.cache_handler
+    except Exception as e:
+        logger.debug("Not using cache handler: %s", e)
+
+    assert handler is not None
+
+    config_rules = config.rule_set
     for segment in code_segments_from_path(path, config.exclude):
-        total += 1
         loc = f"[blue]{segment.code_path}[/blue]"
         rich.print(f"[white]\\[  ...  ][/white] [blue]{loc}[/blue]", end="\r")
+        seg_rules = config_rules
 
-        report = check_segment(segment, config, llm, ctx)
+        report: dict[Rule, list[CheckResult]] = {}
+        if handler is not None:
+            cached_report = handler.get_report(segment)
+            report = {
+                rule: results
+                for rule, results in cached_report.items()
+                if results is not None
+            }
+            seg_rules = [rule for rule in seg_rules if rule not in cached_report]
+
+        if seg_rules:
+            new_report = check_segment(segment, seg_rules, ctx, llm)
+            if handler is not None:
+                handler.set_report(segment, new_report, sync=True)
+            report.update(new_report)
 
         statuses = Counter(r.status for rep in report.values() for r in rep)
 
@@ -82,7 +102,7 @@ def check(path: str, config: DolceConfig) -> None:
             unknown += 1
         _print_report_issues(report)
 
-    if total:
+    if bad or unknown:
         rich.print("\n[bold]Summary:[/bold]")
         if unknown:
             rich.print(f"[yellow]✓ Unkown: {unknown}[/yellow]")
@@ -90,6 +110,8 @@ def check(path: str, config: DolceConfig) -> None:
             rich.print(f"[red]✗ Incorrect: {bad}[/red]")
         if not bad and not unknown:
             rich.print("[green]✓ All correct[/green]")
+    else:
+        rich.print("\n[bold green]✓ All correct[/bold green]")
 
     if bad:
         raise SystemExit(1)

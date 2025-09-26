@@ -84,9 +84,7 @@ class DolceConfig:
     @cached_property
     def cache_handler(self) -> CacheHandler:
         """Lazily initializes and returns the CacheHandler based on the current rule set."""
-        if self.rule_set is None:
-            raise ValueError("RuleSet must be defined to use CacheHandler.")
-        return CacheHandler(self.rule_set)
+        return CacheHandler()
 
     def validate(self) -> None:
         """Validates the configuration to ensure all required fields are set correctly."""
@@ -137,11 +135,6 @@ class DolceConfig:
 
         if self.retry_delay < 0.0:
             raise ValueError("Retry delay must be a non-negative float.")
-
-        if self.api_key is not None and self.api_key not in os.environ:
-            raise ValueError(
-                f"API key environment variable '{self.api_key}' is not set."
-            )
 
     @staticmethod
     def from_pyproject() -> DolceConfig:
