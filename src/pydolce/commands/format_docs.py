@@ -37,7 +37,7 @@ def _process_restyled_file(
         rich.print(f"[green]No changes needed in {filepath}[/green]")
 
 
-def restyle(path: Path | str, config: DolceConfig) -> None:
+def format_docs(path: Path | str, config: DolceConfig) -> None:
     if config.ensure_style is None:
         raise ValueError("Docstring style must be specified in config for restyling")
 

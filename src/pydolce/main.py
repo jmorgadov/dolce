@@ -83,9 +83,10 @@ provider = "ollama"
 
 
 @app.command(
+    name="format",
     help="Rewrite docstrings to conform to the specified style",
 )
-def restyle(
+def format_docs(
     path: Annotated[
         str,
         typer.Argument(
@@ -93,15 +94,27 @@ def restyle(
         ),
     ] = ".",
     style: Annotated[
-        str,
+        str | None,
         typer.Argument(
-            help="Docstring style to use for restyling (overrides config)",
+            help=(
+                "Docstring style to use for restyling (overrides config). "
+                "Must be one of: google, numpy, sphinx, rest, epy. "
+                "If not specified, the style from the config will be used."
+            )
         ),
-    ] = "google",
+    ] = None,
 ) -> None:
     _config = DolceConfig.from_pyproject()
+    if style is None:
+        if _config.ensure_style is None:
+            rich.print(
+                "[red]✗ Docstring style must be specified via --style "
+                "or in the config file by setting ensure_style.[/red]"
+            )
+            return
+        style = _config.ensure_style
     _config.update(ensure_style=style)
-    pydolce.restyle(path, _config)
+    pydolce.format_docs(path, _config)
 
 
 @app.command(
@@ -118,32 +131,6 @@ def rules() -> None:
         rich.print(
             f"[cyan][{rule.reference}][/cyan] [white]{rule.name + ' ':.<35}[/white] {rule.description}"
         )
-
-
-# @app.command(
-#     help="Show migration mapping from pydoclint, pydocstyle, and docsig to Dolce rule references",
-# )
-# def migrations() -> None:
-#     if not Rule.pydoclint_mig:
-#         rich.print("[yellow]No pydoclint migration data available.[/yellow]")
-#     else:
-#         rich.print("[bold magenta]Pydoclint to Dolce migration:[/bold magenta]")
-#         for pydoclint_ref, dolce_ref in Rule.pydoclint_mig.items():
-#             rich.print(f"[cyan]{pydoclint_ref}[/cyan] -> [green]{dolce_ref}[/green]")
-
-#     if not Rule.pydocstyle_mig:
-#         rich.print("\n[yellow]No pydocstyle migration data available.[/yellow]")
-#     else:
-#         rich.print("\n[bold magenta]Pydocstyle to Dolce migration:[/bold magenta]")
-#         for pydocstyle_ref, dolce_ref in Rule.pydocstyle_mig.items():
-#             rich.print(f"[cyan]{dolce_ref}[/cyan] -> [green]{pydocstyle_ref}[/green]")
-
-#     if not Rule.docsig_mig:
-#         rich.print("\n[yellow]No docsig migration data available.[/yellow]")
-#     else:
-#         rich.print("\n[bold magenta]Docsig to Dolce migration:[/bold magenta]")
-#         for docsig_ref, dolce_ref in Rule.docsig_mig.items():
-#             rich.print(f"[cyan]{docsig_ref}[/cyan] -> [green]{dolce_ref}[/green]")
 
 
 @app.callback()
