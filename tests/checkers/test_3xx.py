@@ -20,7 +20,7 @@ from pydolce.core.rules.checkers.signature import (
 from pydolce.core.rules.rule import CheckContext
 
 
-def test_duplicate_params(func_code_segments: Callable) -> None:
+def test_duplicate_params(func_code_segments: Callable, ctx: CheckContext) -> None:
     def func_with_duplicate_params(param: int) -> None:
         """This is a docstring.
 
@@ -35,9 +35,9 @@ def test_duplicate_params(func_code_segments: Callable) -> None:
 
     segment = func_code_segments(func_with_duplicate_params)[0]
 
-    result = duplicate_params(segment, None)
-    assert result is not None
-    assert not result.passed
+    for result in duplicate_params(segment, ctx):
+        assert result is not None
+        assert result.is_bad
 
 
 def test_missing_param(func_code_segments: Callable, ctx: CheckContext) -> None:
@@ -54,12 +54,14 @@ def test_missing_param(func_code_segments: Callable, ctx: CheckContext) -> None:
 
     segment = func_code_segments(func_with_missing_param)[0]
 
-    result = missing_param(segment, ctx)
-    assert result is not None
-    assert not result.passed
+    for result in missing_param(segment, ctx):
+        assert result is not None
+        assert result.is_bad
 
 
-def test_missing_param_description(func_code_segments: Callable) -> None:
+def test_missing_param_description(
+    func_code_segments: Callable, ctx: CheckContext
+) -> None:
     def func_with_missing_param_description(param: int) -> None:
         """This is a docstring.
 
@@ -73,12 +75,12 @@ def test_missing_param_description(func_code_segments: Callable) -> None:
 
     segment = func_code_segments(func_with_missing_param_description)[0]
 
-    result = missing_param_description(segment, None)
-    assert result is not None
-    assert not result.passed
+    for result in missing_param_description(segment, ctx):
+        assert result is not None
+        assert result.is_bad
 
 
-def test_missing_param_type(func_code_segments: Callable) -> None:
+def test_missing_param_type(func_code_segments: Callable, ctx: CheckContext) -> None:
     def func_with_missing_param_type(param: int) -> None:
         """This is a docstring.
 
@@ -92,12 +94,12 @@ def test_missing_param_type(func_code_segments: Callable) -> None:
 
     segment = func_code_segments(func_with_missing_param_type)[0]
 
-    result = missing_param_type(segment, None)
-    assert result is not None
-    assert not result.passed
+    for result in missing_param_type(segment, ctx):
+        assert result is not None
+        assert result.is_bad
 
 
-def test_wrong_param_type(func_code_segments: Callable) -> None:
+def test_wrong_param_type(func_code_segments: Callable, ctx: CheckContext) -> None:
     def func_with_wrong_param_type(param: int) -> None:
         """This is a docstring.
 
@@ -111,12 +113,12 @@ def test_wrong_param_type(func_code_segments: Callable) -> None:
 
     segment = func_code_segments(func_with_wrong_param_type)[0]
 
-    result = wrong_param_type(segment, None)
-    assert result is not None
-    assert not result.passed
+    for result in wrong_param_type(segment, ctx):
+        assert result is not None
+        assert result.is_bad
 
 
-def test_params_does_not_exist(func_code_segments: Callable) -> None:
+def test_params_does_not_exist(func_code_segments: Callable, ctx: CheckContext) -> None:
     def func_with_params_does_not_exist(param: int) -> None:
         """This is a docstring.
 
@@ -131,9 +133,9 @@ def test_params_does_not_exist(func_code_segments: Callable) -> None:
 
     segment = func_code_segments(func_with_params_does_not_exist)[0]
 
-    result = params_does_not_exist(segment, None)
-    assert result is not None
-    assert not result.passed
+    for result in params_does_not_exist(segment, ctx):
+        assert result is not None
+        assert result.is_bad
 
 
 def test_missing_return(func_code_segments: Callable, ctx: CheckContext) -> None:
@@ -147,9 +149,9 @@ def test_missing_return(func_code_segments: Callable, ctx: CheckContext) -> None
 
     segment = func_code_segments(func_with_missing_return)[0]
 
-    result = missing_return(segment, ctx)
-    assert result is not None
-    assert not result.passed
+    for result in missing_return(segment, ctx):
+        assert result is not None
+        assert result.is_bad
 
     # Should ignore generators
     def generator_with_missing_yield(param: int) -> Generator[int]:
@@ -161,11 +163,13 @@ def test_missing_return(func_code_segments: Callable, ctx: CheckContext) -> None
         yield param
 
     segment = func_code_segments(generator_with_missing_yield)[0]
-    result = missing_return(segment, ctx)
-    assert result is None  # Should be ignored
+    for result in missing_return(segment, ctx):
+        assert result is None  # Should be ignored
 
 
-def test_missing_return_description(func_code_segments: Callable) -> None:
+def test_missing_return_description(
+    func_code_segments: Callable, ctx: CheckContext
+) -> None:
     def func_with_missing_return_description(param: int) -> int:
         """This is a docstring.
 
@@ -179,12 +183,12 @@ def test_missing_return_description(func_code_segments: Callable) -> None:
 
     segment = func_code_segments(func_with_missing_return_description)[0]
 
-    result = missing_return_description(segment, None)
-    assert result is not None
-    assert not result.passed
+    for result in missing_return_description(segment, ctx):
+        assert result is not None
+        assert result.is_bad
 
 
-def test_wrong_return_type(func_code_segments: Callable) -> None:
+def test_wrong_return_type(func_code_segments: Callable, ctx: CheckContext) -> None:
     def func_with_wrong_return_type(param: int) -> int:
         """This is a docstring.
 
@@ -198,9 +202,9 @@ def test_wrong_return_type(func_code_segments: Callable) -> None:
 
     segment = func_code_segments(func_with_wrong_return_type)[0]
 
-    result = wrong_return_type(segment, None)
-    assert result is not None
-    assert not result.passed
+    for result in wrong_return_type(segment, ctx):
+        assert result is not None
+        assert result.is_bad
 
 
 def test_unnecessary_return(func_code_segments: Callable, ctx: CheckContext) -> None:
@@ -217,9 +221,9 @@ def test_unnecessary_return(func_code_segments: Callable, ctx: CheckContext) -> 
 
     segment = func_code_segments(func_with_unnecessary_return)[0]
 
-    result = unnecessary_return(segment, ctx)
-    assert result is not None
-    assert not result.passed
+    for result in unnecessary_return(segment, ctx):
+        assert result is not None
+        assert result.is_bad
 
     # Should ignore generators
     def generator_with_unnecessary_yield(param: int) -> Generator[int]:
@@ -234,11 +238,13 @@ def test_unnecessary_return(func_code_segments: Callable, ctx: CheckContext) -> 
         yield param
 
     segment = func_code_segments(generator_with_unnecessary_yield)[0]
-    result = unnecessary_return(segment, ctx)
-    assert result is None  # Should be ignored
+    for result in unnecessary_return(segment, ctx):
+        assert result is None  # Should be ignored
 
 
-def test_return_on_property(method_code_segments: Callable, ctx: CheckContext) -> None:
+def test_return_on_property(
+    property_code_segments: Callable, ctx: CheckContext
+) -> None:
     code = """class Foo:
     @property
     def property_with_return(self) -> int:
@@ -250,11 +256,11 @@ def test_return_on_property(method_code_segments: Callable, ctx: CheckContext) -
         return 42
 """
 
-    segment = method_code_segments(code)[0]
+    segment = property_code_segments(code)[0]
 
-    result = return_on_property(segment, ctx)
-    assert result is not None
-    assert not result.passed
+    for result in return_on_property(segment, ctx):
+        assert result is not None
+        assert result.is_bad
 
 
 def test_missing_yield(func_code_segments: Callable, ctx: CheckContext) -> None:
@@ -268,9 +274,9 @@ def test_missing_yield(func_code_segments: Callable, ctx: CheckContext) -> None:
 
     segment = func_code_segments(generator_with_missing_yield)[0]
 
-    result = missing_yield(segment, ctx)
-    assert result is not None
-    assert not result.passed
+    for result in missing_yield(segment, ctx):
+        assert result is not None
+        assert result.is_bad
 
     # Should ignore non-generators
     def func_with_missing_return(param: int) -> int:
@@ -285,11 +291,13 @@ def test_missing_yield(func_code_segments: Callable, ctx: CheckContext) -> None:
         return param
 
     segment = func_code_segments(func_with_missing_return)[0]
-    result = missing_yield(segment, ctx)
-    assert result is None  # Should be ignored
+    for result in missing_yield(segment, ctx):
+        assert result is None  # Should be ignored
 
 
-def test_missing_yield_description(func_code_segments: Callable) -> None:
+def test_missing_yield_description(
+    func_code_segments: Callable, ctx: CheckContext
+) -> None:
     def generator_with_missing_yield_description(param: int) -> Generator[int]:
         """This is a docstring.
 
@@ -303,12 +311,12 @@ def test_missing_yield_description(func_code_segments: Callable) -> None:
 
     segment = func_code_segments(generator_with_missing_yield_description)[0]
 
-    result = missing_yield_description(segment, None)
-    assert result is not None
-    assert not result.passed
+    for result in missing_yield_description(segment, ctx):
+        assert result is not None
+        assert result.is_bad
 
 
-def test_wrong_yield_type(func_code_segments: Callable) -> None:
+def test_wrong_yield_type(func_code_segments: Callable, ctx: CheckContext) -> None:
     def generator_with_wrong_yield_type(param: int) -> Generator[int]:
         """This is a docstring.
 
@@ -322,9 +330,9 @@ def test_wrong_yield_type(func_code_segments: Callable) -> None:
 
     segment = func_code_segments(generator_with_wrong_yield_type)[0]
 
-    result = wrong_yield_type(segment, None)
-    assert result is not None
-    assert not result.passed
+    for result in wrong_yield_type(segment, ctx):
+        assert result is not None
+        assert result.is_bad
 
 
 def test_unnecessary_yield(func_code_segments: Callable, ctx: CheckContext) -> None:
@@ -340,6 +348,6 @@ def test_unnecessary_yield(func_code_segments: Callable, ctx: CheckContext) -> N
         return param
 
     segment = func_code_segments(func_with_unnecessary_return)[0]
-    result = unnecessary_yield(segment, ctx)
-    assert result is not None
-    assert not result.passed
+    for result in unnecessary_yield(segment, ctx):
+        assert result is not None
+        assert result.is_bad

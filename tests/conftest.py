@@ -79,6 +79,21 @@ def method_code_segments() -> Callable[[str], list[CodeSegment]]:
 
 
 @pytest.fixture
+def property_code_segments() -> Callable[[str], list[CodeSegment]]:
+    def _code_segment_from_str(code_str: str) -> list[CodeSegment]:
+        code_str = _unindent_all_possible(code_str)
+        visitor = CodeSegmentVisitor("dummy.py")
+        visitor.visit(ast.parse(code_str))
+        return [
+            segment
+            for segment in visitor.segments
+            if segment.seg_type == CodeSegmentType.Property
+        ]
+
+    return _code_segment_from_str
+
+
+@pytest.fixture
 def class_code_segments() -> Callable[[str], list[CodeSegment]]:
     def _code_segment_from_str(code_str: str) -> list[CodeSegment]:
         code_str = _unindent_all_possible(code_str)

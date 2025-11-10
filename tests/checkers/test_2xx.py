@@ -20,6 +20,6 @@ def test_invalid_docstring_style(
     segment = func_code_segments(func_with_invalid_docstring_style)[0]
     ctx.config.update(ensure_style="google")
 
-    result = invalid_docstring_style(segment, ctx)
-    assert result is not None
-    assert not result.passed
+    for result in invalid_docstring_style(segment, ctx):
+        assert result is not None
+        assert result.is_bad

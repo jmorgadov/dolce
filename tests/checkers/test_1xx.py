@@ -15,9 +15,9 @@ def test_missing_func_docstring(
 
     segment = func_code_segments(func_with_invalid_docstring)[0]
 
-    result = missing_func_docstring(segment, ctx)
-    assert result is not None
-    assert not result.passed
+    for result in missing_func_docstring(segment, ctx):
+        assert result is not None
+        assert result.is_bad
 
 
 def test_missing_class_docstring(
@@ -31,6 +31,6 @@ class ClassWithNoDocstring:
 
     segment = class_code_segments(code_str)[0]
 
-    result = missing_class_docstring(segment, ctx)
-    assert result is not None
-    assert not result.passed
+    for result in missing_class_docstring(segment, ctx):
+        assert result is not None
+        assert result.is_bad

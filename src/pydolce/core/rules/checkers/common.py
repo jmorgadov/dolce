@@ -34,6 +34,18 @@ class CheckResult:
     status: CheckStatus
     issue: str = ""
 
+    @property
+    def is_good(self) -> bool:
+        return self.status == CheckStatus.GOOD
+
+    @property
+    def is_bad(self) -> bool:
+        return self.status == CheckStatus.BAD
+
+    @property
+    def is_unknown(self) -> bool:
+        return self.status == CheckStatus.UNKNOWN
+
     @staticmethod
     def good() -> CheckResult:
         return CheckResult(status=CheckStatus.GOOD)

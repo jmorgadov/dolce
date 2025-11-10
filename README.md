@@ -119,7 +119,6 @@ You can visit the [Ollama](https://ollama.com/) to check how to install and run 
 
 ## To be implemented
 
-- Add cache system to avoid re-checking unchanged code
 - Support for ignoring specific code segments, files, directories, etc
 - Support parallel requests
 ... much more!
